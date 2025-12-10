@@ -3,84 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UIT _ VOICE CLONING</title>
+    <title>UIT Voice Cloning</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #1a1a1a;
-            color: #fff;
-        }
-
-        .card {
-            background-color: #242424;
-            border: none;
-        }
-
-        .btn-generate {
-            background-color: #ff6600;
-            border: none;
-            font-weight: bold;
-            font-size: 1.2rem;
-            padding: 12px;
-        }
-
-        .btn-generate:hover {
-            background-color: #e65c00;
-        }
-
-        textarea.form-control {
-            font-size: 1.05rem;
-            height: 200px;
-        }
-
-        /* Toàn bộ text màu trắng */
-        body, h1, h2, h3, h4, h5, h6, p, label, select, option, span, a, button {
-            color: #ffffff !important;
-        }
-    </style>
+   <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
-<div class="container py-4">
-    <h2 class="text-center text-warning mb-4">UIT _ VOICE CLONING</h2>
+<div class="container py-5">
+    <h1 class="text-center text-warning mb-4">UIT Voice Cloning</h1>
 
-    <div class="row g-4">
-        <!-- Input -->
+    <div class="row g-5">
+        <!-- Input Panel -->
         <div class="col-md-6">
-            <div class="card p-4 h-100">
+            <div class="card shadow-lg rounded-4 p-4">
                 <form id="synthesisForm" method="POST" enctype="multipart/form-data">
-
-                    <!-- Mode -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Mode</label>
-                        <select class="form-select bg-dark text-white border-0" id="modeSelect" name="mode">
-                            <option value="text">Text Only</option>
-                            <option value="text_audio" selected>Text + Audio</option>
-                        </select>
+                    <!-- Voice Sample -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Select Voice Sample</label>
+                        <div class="voice-sample-container">
+                            {% for voice in voice_samples %}
+                            <div class="voice-sample-item mb-2 d-flex align-items-center gap-3">
+                                <input type="radio" name="voice_sample" value="{{ voice.id }}" id="voice_{{ voice.id }}"
+                                       {% if loop.index== 1 %}checked{% endif %}>
+                                <label for="voice_{{ voice.id }}" class="mb-0">{{ voice.name }}</label>
+                                <button type="button" class="btn btn-sm btn-outline-info listen-btn"
+                                        data-audio="{{ url_for('static', filename=voice.file_path) }}">▶ Nghe thử
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary stop-listen-btn">⏹ Tắt
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
 
                     <!-- Text Input -->
-                    <div class="mb-3" id="textInputGroup">
+                    <div class="mb-4">
                         <label class="form-label fw-bold">Input Text</label>
-                        <textarea class="form-control bg-dark text-white border-0" name="text"
+                        <textarea class="form-control custom-textarea" name="text"
                                   placeholder="Type your text here..."></textarea>
                     </div>
 
                     <!-- Audio Input -->
-                    <div class="mb-3" id="audioInputGroup">
+                    <div class="mb-4" id="audioInputGroup">
                         <label class="form-label fw-bold">Audio Input</label>
-
-                        <!-- Upload file -->
-                        <input type="file" class="form-control bg-dark text-white border-0 mb-3" id="audioInput"
-                               name="audio" accept="audio/*">
-
-                        <!-- Record voice -->
-                        <div class="mb-2">
-                            <button type="button" id="recordBtn" class="btn btn-outline-warning w-100">🎤 Start
-                                Recording
+                        <input type="file" class="form-control custom-file" name="audio" id="audioInput"
+                               accept="audio/*">
+                        <div class="mb-3">
+                            <button type="button" id="recordBtn" class="btn btn-outline-warning w-100">
+                                🎤 Start Recording
                             </button>
                         </div>
-
-                        <!-- Preview Audio -->
                         <div id="audioPreview" class="mt-3" style="display:none;">
                             <h6 class="text-info">Preview Audio</h6>
                             <audio id="uploadedAudioPlayer" controls class="w-100"></audio>
@@ -88,35 +59,29 @@
                     </div>
 
                     <!-- Language -->
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label fw-bold">Select Language</label>
-                        <select class="form-select bg-dark text-white border-0" name="lang">
+                        <select class="form-select custom-select" name="lang">
                             <option value="vi" selected>Vietnamese</option>
                             <option value="en">English</option>
                             <option value="zh">Mandarin</option>
                         </select>
                     </div>
 
+                    <!-- Generate Button -->
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-generate btn-lg">Generate Audio</button>
+                        <button type="submit" class="btn btn-generate btn-lg rounded-pill">Generate Audio</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Output -->
+        <!-- Output Panel -->
         <div class="col-md-6">
-            <div class="card p-4 h-100">
+            <div class="card shadow-lg rounded-4 p-4">
                 <div id="loadingSpinner" class="text-center" style="display:none;">
                     <div class="spinner-border text-warning"></div>
                     <p class="mt-2">Generating audio, please wait...</p>
-                </div>
-
-                <div id="phonemeContainer" class="w-100 mb-4">
-                    <div class="d-flex justify-content-center align-items-center bg-dark rounded"
-                         style="height: 300px;">
-                        <span class="text-light">No image generated yet</span>
-                    </div>
                 </div>
 
                 <div id="audioResult" class="w-100" style="display:none;">
@@ -124,133 +89,18 @@
                     <audio id="generatedAudio" controls class="w-100 mb-3">
                         <source id="audioSource" src="" type="audio/wav">
                     </audio>
-                    <a id="downloadLink" href="#" download class="btn btn-outline-success">⬇ Download Audio</a>
+                    <a id="downloadLink" href="#" download class="btn btn-outline-success rounded-pill">
+                        ⬇ Download Audio
+                    </a>
                 </div>
 
-                <p id="noAudio" class="text-light">No audio generated yet</p>
+                <p id="noAudio" class="text-light text-center">No audio generated yet</p>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    let mediaRecorder, audioChunks = [];
-
-    // Toggle mode
-    function toggleModeUI(mode) {
-        const audioGroup = document.getElementById("audioInputGroup");
-        const preview = document.getElementById("audioPreview");
-        if (mode === "text_audio") {
-            audioGroup.style.display = "block";
-        } else {
-            audioGroup.style.display = "none";
-            preview.style.display = "none";
-        }
-    }
-
-    // Set preview audio
-    function setPreviewAudio(audioURL) {
-        const audioPlayer = document.getElementById("uploadedAudioPlayer");
-        audioPlayer.src = audioURL;
-        document.getElementById("audioPreview").style.display = "block";
-    }
-
-    // Handle recording
-    async function handleRecording() {
-        const recordBtn = document.getElementById("recordBtn");
-
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-            mediaRecorder.stop();
-            recordBtn.textContent = "🎤 Start Recording";
-            recordBtn.classList.replace("btn-danger", "btn-outline-warning");
-            return;
-        }
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({audio: true});
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-
-            mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, {type: "audio/wav"});
-                const audioURL = URL.createObjectURL(audioBlob);
-                setPreviewAudio(audioURL);
-
-                // Gắn file vào input để submit
-                const file = new File([audioBlob], "recorded.wav", {type: "audio/wav"});
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                document.getElementById("audioInput").files = dataTransfer.files;
-            };
-
-            mediaRecorder.start();
-            recordBtn.textContent = "⏹ Stop Recording";
-            recordBtn.classList.replace("btn-outline-warning", "btn-danger");
-        } catch (err) {
-            alert("Microphone access denied: " + err);
-        }
-    }
-
-    // Init
-    window.addEventListener("DOMContentLoaded", function () {
-        const modeSelect = document.getElementById("modeSelect");
-        const audioInput = document.getElementById("audioInput");
-        const recordBtn = document.getElementById("recordBtn");
-
-        // init UI
-        toggleModeUI(modeSelect.value);
-
-        // events
-        modeSelect.addEventListener("change", () => toggleModeUI(modeSelect.value));
-
-        audioInput.addEventListener("change", (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                setPreviewAudio(URL.createObjectURL(file));
-            } else {
-                document.getElementById("audioPreview").style.display = "none";
-            }
-        });
-
-        recordBtn.addEventListener("click", handleRecording);
-
-        // form submit
-        document.getElementById("synthesisForm").addEventListener("submit", function (e) {
-            e.preventDefault();
-            document.getElementById("loadingSpinner").style.display = "block";
-            document.getElementById("audioResult").style.display = "none";
-            document.getElementById("noAudio").style.display = "none";
-
-            let formData = new FormData(this);
-            fetch("/", {method: "POST", body: formData})
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById("loadingSpinner").style.display = "none";
-                    console.log(data);
-
-                    if (data.png_url) {
-                        document.getElementById("phonemeContainer").innerHTML =
-                            `<img src="${data.png_url}" alt="Spectrogram" class="img-fluid rounded shadow">`;
-                    }
-
-                    if (data.audio_url) {
-                        document.getElementById("audioSource").src = data.audio_url;
-                        document.getElementById("downloadLink").href = data.audio_url;
-                        document.getElementById("generatedAudio").load();
-                        document.getElementById("audioResult").style.display = "block";
-                    } else {
-                        document.getElementById("noAudio").style.display = "block";
-                    }
-                })
-                .catch(err => {
-                    document.getElementById("loadingSpinner").style.display = "none";
-                    document.getElementById("noAudio").innerText = "Error generating audio";
-                    document.getElementById("noAudio").style.display = "block";
-                });
-        });
-    });
-</script>
+<audio id="previewAudio" style="display:none;"></audio>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

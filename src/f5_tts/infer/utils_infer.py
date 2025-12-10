@@ -96,43 +96,80 @@ fix_duration = None
 #
 #     return chunks
 
+# def chunk_text(text, max_chars=135):
+#     sentences = [s.strip() for s in text.split('. ') if s.strip()]
+#     i = 0
+#     while i < len(sentences):
+#         if len(sentences[i].split()) < 4:
+#             if i == 0:
+#                 # Merge with the next sentence
+#                 sentences[i + 1] = sentences[i] + ', ' + sentences[i + 1]
+#                 del sentences[i]
+#             else:
+#                 # Merge with the previous sentence
+#                 sentences[i - 1] = sentences[i - 1] + ', ' + sentences[i]
+#                 del sentences[i]
+#                 i -= 1
+#         else:
+#             i += 1
+#
+#     final_sentences = []
+#     for sentence in sentences:
+#         parts = [p.strip() for p in sentence.split(', ')]
+#         buffer = []
+#         for part in parts:
+#             buffer.append(part)
+#             total_words = sum(len(p.split()) for p in buffer)
+#             if total_words > 20:
+#                 # Split into separate chunks
+#                 long_part = ', '.join(buffer)
+#                 final_sentences.append(long_part)
+#                 buffer = []
+#         if buffer:
+#             final_sentences.append(', '.join(buffer))
+#
+#     if len(final_sentences[-1].split()) < 4 and len(final_sentences) >= 2:
+#         final_sentences[-2] = final_sentences[-2] + ", " + final_sentences[-1]
+#         final_sentences = final_sentences[0:-1]
+#
+#     return final_sentences
+
+
 def chunk_text(text, max_chars=135):
-    sentences = [s.strip() for s in text.split('. ') if s.strip()]
-    i = 0
-    while i < len(sentences):
-        if len(sentences[i].split()) < 4:
-            if i == 0:
-                # Merge with the next sentence
-                sentences[i + 1] = sentences[i] + ', ' + sentences[i + 1]
-                del sentences[i]
-            else:
-                # Merge with the previous sentence
-                sentences[i - 1] = sentences[i - 1] + ', ' + sentences[i]
-                del sentences[i]
-                i -= 1
-        else:
-            i += 1
+    """Tối ưu: Ít loop hơn, xử lý nhanh hơn"""
+    if len(text) <= max_chars:
+        return [text]
 
-    final_sentences = []
+    # Split by sentence endings
+    sentences = []
+    for s in text.split('. '):
+        s = s.strip()
+        if s:
+            sentences.append(s + '.')
+
+    if not sentences:
+        return [text]
+
+    # Merge short sentences
+    merged = []
+    current = ""
+
     for sentence in sentences:
-        parts = [p.strip() for p in sentence.split(', ')]
-        buffer = []
-        for part in parts:
-            buffer.append(part)
-            total_words = sum(len(p.split()) for p in buffer)
-            if total_words > 20:
-                # Split into separate chunks
-                long_part = ', '.join(buffer)
-                final_sentences.append(long_part)
-                buffer = []
-        if buffer:
-            final_sentences.append(', '.join(buffer))
+        word_count = len(sentence.split())
 
-    if len(final_sentences[-1].split()) < 4 and len(final_sentences) >= 2:
-        final_sentences[-2] = final_sentences[-2] + ", " + final_sentences[-1]
-        final_sentences = final_sentences[0:-1]
+        if word_count < 4 and merged:
+            merged[-1] += " " + sentence
+        elif len(current) + len(sentence) <= max_chars:
+            current += " " + sentence if current else sentence
+        else:
+            if current:
+                merged.append(current)
+            current = sentence
 
-    return final_sentences
+    if current:
+        merged.append(current)
+
+    return merged if merged else [text]
 
 # load vocoder
 def load_vocoder(vocoder_name="vocos", is_local=False, local_path="", device=device, hf_cache_dir=None):
@@ -396,40 +433,39 @@ def preprocess_ref_audio_text(ref_audio_orig, ref_text, clip_short=True, show_in
 
     return ref_audio, ref_text
 
-
-# infer process: chunk text -> infer batches [i.e. infer_batch_process()]
-try:
-    torchaudio.set_audio_backend("soundfile")
-except Exception as e:
-    print(f"Warning: Failed to set soundfile backend for torchaudio: {e}")
-
 def infer_process(
-    ref_audio,
-    ref_text,
-    gen_text,
-    model_obj,
-    vocoder,
-    mel_spec_type=mel_spec_type,
-    show_info=print,
-    progress=tqdm,
-    target_rms=target_rms,
-    cross_fade_duration=cross_fade_duration,
-    nfe_step=nfe_step,
-    cfg_strength=cfg_strength,
-    sway_sampling_coef=sway_sampling_coef,
-    speed=speed,
-    fix_duration=fix_duration,
-    device=device,
+        ref_audio,
+        ref_text,
+        gen_text,
+        model_obj,
+        vocoder,
+        mel_spec_type=mel_spec_type,
+        show_info=print,
+        progress=tqdm,
+        target_rms=target_rms,
+        cross_fade_duration=cross_fade_duration,
+        nfe_step=nfe_step,
+        cfg_strength=cfg_strength,
+        sway_sampling_coef=sway_sampling_coef,
+        speed=speed,
+        fix_duration=fix_duration,
+        device=device,
 ):
-    # Split the input text into batches
+    # Load audio reference - bỏ backend nếu cần (phù hợp phiên bản torchaudio)
     audio, sr = torchaudio.load(ref_audio, backend="soundfile")
+
+    # Tính max_chars dựa trên độ dài ref_text
     max_chars = int(len(ref_text.encode("utf-8")) / (audio.shape[-1] / sr) * (22 - audio.shape[-1] / sr))
+
+    # Chia gen_text thành các batch
     gen_text_batches = chunk_text(gen_text, max_chars=max_chars)
-    for i, gen_text in enumerate(gen_text_batches):
-        print(f"gen_text {i}", gen_text)
+    for i, batch in enumerate(gen_text_batches):
+        print(f"gen_text {i}", batch)
     print("\n")
 
     show_info(f"Generating audio in {len(gen_text_batches)} batches...")
+
+    # Gọi infer_batch_process và lấy kết quả đầu tiên
     return next(
         infer_batch_process(
             (audio, sr),
@@ -450,10 +486,6 @@ def infer_process(
         )
     )
 
-
-# infer batches
-
-
 def infer_batch_process(
     ref_audio,
     ref_text,
@@ -473,6 +505,7 @@ def infer_batch_process(
     streaming=False,
     chunk_size=2048,
 ):
+    """Tối ưu: Xử lý tuần tự đơn giản, không dùng ThreadPool"""
     audio, sr = ref_audio
     if audio.shape[0] > 1:
         audio = torch.mean(audio, dim=0, keepdim=True)
@@ -491,12 +524,10 @@ def infer_batch_process(
     if len(ref_text[-1].encode("utf-8")) == 1:
         ref_text = ref_text + " "
 
-    def process_batch(gen_text):
-        local_speed = speed
-        if len(gen_text.encode("utf-8")) < 10:
-            local_speed = 0.3
+    # Xử lý từng batch tuần tự (đơn giản, hiệu quả hơn ThreadPool cho GPU)
+    for gen_text in (progress.tqdm(gen_text_batches) if progress else gen_text_batches):
+        local_speed = 0.3 if len(gen_text.encode("utf-8")) < 10 else speed
 
-        # Prepare the text
         text_list = [ref_text + gen_text]
         final_text_list = convert_char_to_pinyin(text_list)
 
@@ -504,12 +535,11 @@ def infer_batch_process(
         if fix_duration is not None:
             duration = int(fix_duration * target_sample_rate / hop_length)
         else:
-            # Calculate duration
             ref_text_len = len(ref_text.encode("utf-8"))
             gen_text_len = len(gen_text.encode("utf-8"))
             duration = ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / local_speed)
 
-        # inference
+        # Inference
         with torch.inference_mode():
             generated, _ = model_obj.sample(
                 cond=audio,
@@ -521,86 +551,63 @@ def infer_batch_process(
             )
             del _
 
-            generated = generated.to(torch.float32)  # generated mel spectrogram
+            generated = generated.to(torch.float32)
             generated = generated[:, ref_audio_len:, :]
             generated = generated.permute(0, 2, 1)
+
             if mel_spec_type == "vocos":
                 generated_wave = vocoder.decode(generated)
             elif mel_spec_type == "bigvgan":
                 generated_wave = vocoder(generated)
+
             if rms < target_rms:
                 generated_wave = generated_wave * rms / target_rms
 
-            # wav -> numpy
             generated_wave = generated_wave.squeeze().cpu().numpy()
+            generated_cpu = generated[0].cpu().numpy()
 
-            if streaming:
-                for j in range(0, len(generated_wave), chunk_size):
-                    yield generated_wave[j : j + chunk_size], target_sample_rate
-            else:
-                generated_cpu = generated[0].cpu().numpy()
-                del generated
-                yield generated_wave, generated_cpu
+            generated_waves.append(generated_wave)
+            spectrograms.append(generated_cpu)
 
-    if streaming:
-        for gen_text in progress.tqdm(gen_text_batches) if progress is not None else gen_text_batches:
-            for chunk in process_batch(gen_text):
-                yield chunk
-    else:
-        with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(process_batch, gen_text) for gen_text in gen_text_batches]
-            for future in progress.tqdm(futures) if progress is not None else futures:
-                result = future.result()
-                if result:
-                    generated_wave, generated_mel_spec = next(result)
-                    generated_waves.append(generated_wave)
-                    spectrograms.append(generated_mel_spec)
+            del generated
 
-        if generated_waves:
-            if cross_fade_duration <= 0:
-                # Simply concatenate
-                final_wave = np.concatenate(generated_waves)
-            else:
-                # Combine all generated waves with cross-fading
-                final_wave = generated_waves[0]
-                for i in range(1, len(generated_waves)):
-                    prev_wave = final_wave
-                    next_wave = generated_waves[i]
-
-                    # Calculate cross-fade samples, ensuring it does not exceed wave lengths
-                    cross_fade_samples = int(cross_fade_duration * target_sample_rate)
-                    cross_fade_samples = min(cross_fade_samples, len(prev_wave), len(next_wave))
-
-                    if cross_fade_samples <= 0:
-                        # No overlap possible, concatenate
-                        final_wave = np.concatenate([prev_wave, next_wave])
-                        continue
-
-                    # Overlapping parts
-                    prev_overlap = prev_wave[-cross_fade_samples:]
-                    next_overlap = next_wave[:cross_fade_samples]
-
-                    # Fade out and fade in
-                    fade_out = np.linspace(1, 0, cross_fade_samples)
-                    fade_in = np.linspace(0, 1, cross_fade_samples)
-
-                    # Cross-faded overlap
-                    cross_faded_overlap = prev_overlap * fade_out + next_overlap * fade_in
-
-                    # Combine
-                    new_wave = np.concatenate(
-                        [prev_wave[:-cross_fade_samples], cross_faded_overlap, next_wave[cross_fade_samples:]]
-                    )
-
-                    final_wave = new_wave
-
-            # Create a combined spectrogram
-            combined_spectrogram = np.concatenate(spectrograms, axis=1)
-
-            yield final_wave, target_sample_rate, combined_spectrogram
-
+    # Cross-fade và combine
+    if generated_waves:
+        if cross_fade_duration <= 0:
+            final_wave = np.concatenate(generated_waves)
         else:
-            yield None, target_sample_rate, None
+            final_wave = generated_waves[0]
+            for i in range(1, len(generated_waves)):
+                prev_wave = final_wave
+                next_wave = generated_waves[i]
+
+                cross_fade_samples = int(cross_fade_duration * target_sample_rate)
+                cross_fade_samples = min(cross_fade_samples, len(prev_wave), len(next_wave))
+
+                if cross_fade_samples <= 0:
+                    final_wave = np.concatenate([prev_wave, next_wave])
+                    continue
+
+                prev_overlap = prev_wave[-cross_fade_samples:]
+                next_overlap = next_wave[:cross_fade_samples]
+
+                fade_out = np.linspace(1, 0, cross_fade_samples)
+                fade_in = np.linspace(0, 1, cross_fade_samples)
+
+                cross_faded_overlap = prev_overlap * fade_out + next_overlap * fade_in
+
+                new_wave = np.concatenate([
+                    prev_wave[:-cross_fade_samples],
+                    cross_faded_overlap,
+                    next_wave[cross_fade_samples:]
+                ])
+
+                final_wave = new_wave
+
+        combined_spectrogram = np.concatenate(spectrograms, axis=1)
+        yield final_wave, target_sample_rate, combined_spectrogram
+    else:
+        yield None, target_sample_rate, None
 
 
 # remove silence from generated wav

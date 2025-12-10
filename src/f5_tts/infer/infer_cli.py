@@ -29,7 +29,6 @@ from f5_tts.infer.utils_infer import (
 )
 from f5_tts.model import DiT, UNetT  # noqa: F401. used for config
 
-
 parser = argparse.ArgumentParser(
     prog="python3 infer-cli.py",
     description="Commandline interface for E2/F5 TTS with Advanced Batch Processing.",
@@ -42,7 +41,6 @@ parser.add_argument(
     default=os.path.join(files("f5_tts").joinpath("infer/examples/basic"), "basic.toml"),
     help="The configuration file, default see infer/examples/basic/basic.toml",
 )
-
 
 # Note. Not to provide default value here in order to read default from config file
 
@@ -164,11 +162,9 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-
 # config file
 
 config = tomli.load(open(args.config, "rb"))
-
 
 # command-line interface parameters
 
@@ -177,11 +173,18 @@ ckpt_file = args.ckpt_file or config.get("ckpt_file", "")
 vocab_file = args.vocab_file or config.get("vocab_file", "")
 
 ref_audio = args.ref_audio or config.get("ref_audio", "infer/examples/basic/basic_ref_en.wav")
-ref_text = (
-    args.ref_text
-    if args.ref_text is not None
-    else config.get("ref_text", "Some call me nature, others call me mother nature.")
-)
+# ref_text = (
+#     args.ref_text
+#     if args.ref_text is not None
+#     else config.get("ref_text", "Some call me nature, others call me mother nature.")
+# )
+
+# SAU: nếu không truyền --ref_text thì để None để Whisper xử lý
+if args.ref_text is not None:
+    ref_text = args.ref_text
+else:
+    ref_text = None  # không lấy default từ config nữa
+
 gen_text = args.gen_text or config.get("gen_text", "Here we generate something just for test.")
 gen_file = args.gen_file or config.get("gen_file", "")
 
@@ -203,7 +206,6 @@ sway_sampling_coef = args.sway_sampling_coef or config.get("sway_sampling_coef",
 speed = args.speed or config.get("speed", speed)
 fix_duration = args.fix_duration or config.get("fix_duration", fix_duration)
 
-
 # patches for pip pkg user
 if "infer/examples/" in ref_audio:
     ref_audio = str(files("f5_tts").joinpath(f"{ref_audio}"))
@@ -211,16 +213,14 @@ if "infer/examples/" in gen_file:
     gen_file = str(files("f5_tts").joinpath(f"{gen_file}"))
 if "voices" in config:
     for voice in config["voices"]:
-        voice_ref_audio = config["voices"][voice]["ref_audio"]
+        voice_ref_audio =`   config["voices"][voice]["ref_audio"]
         if "infer/examples/" in voice_ref_audio:
             config["voices"][voice]["ref_audio"] = str(files("f5_tts").joinpath(f"{voice_ref_audio}"))
-
 
 # ignore gen_text if gen_file provided
 
 if gen_file:
     gen_text = codecs.open(gen_file, "r", "utf-8").read()
-
 
 # output path
 
@@ -231,7 +231,6 @@ if save_chunk:
     if not os.path.exists(output_chunk_dir):
         os.makedirs(output_chunk_dir)
 
-
 # load vocoder
 
 if vocoder_name == "vocos":
@@ -240,7 +239,6 @@ elif vocoder_name == "bigvgan":
     vocoder_local_path = "../checkpoints/bigvgan_v2_24khz_100band_256x"
 
 vocoder = load_vocoder(vocoder_name=vocoder_name, is_local=load_vocoder_from_local, local_path=vocoder_local_path)
-
 
 # load TTS model
 
@@ -271,30 +269,72 @@ if not ckpt_file:
 print(f"Using {model}...")
 ema_model = load_model(model_cls, model_cfg.arch, ckpt_file, mel_spec_type=vocoder_name, vocab_file=vocab_file)
 
-
 # inference process
 
 
+from faster_whisper import WhisperModel
+import re
+import os
+import numpy as np
+import soundfile as sf
+
 def main():
+    # Tải model faster-whisper
+    whisper_model = WhisperModel("base", device="cpu", compute_type="int8")  # hoặc "cuda" nếu dùng GPU
+
     main_voice = {"ref_audio": ref_audio, "ref_text": ref_text}
     if "voices" not in config:
         voices = {"main": main_voice}
     else:
         voices = config["voices"]
         voices["main"] = main_voice
+
+    # ----- LOG cấu hình TTS tổng thể -----
+    print("\n===== FINAL GLOBAL CONFIG =====")
+    print("model          :", model)
+    print("ckpt_file      :", ckpt_file)
+    print("vocab_file     :", vocab_file)
+    print("ref_audio (raw):", ref_audio)
+    print("ref_text (raw) :", ref_text)
+    print("gen_text (raw) :", gen_text)
+    print("output_dir     :", output_dir)
+    print("output_file    :", output_file)
+    print("vocoder_name   :", vocoder_name)
+    print("target_rms     :", target_rms)
+    print("cross_fade_dur :", cross_fade_duration)
+    print("nfe_step       :", nfe_step)
+    print("cfg_strength   :", cfg_strength)
+    print("sway_coef      :", sway_sampling_coef)
+    print("speed          :", speed)
+    print("fix_duration   :", fix_duration)
+    print("save_chunk     :", save_chunk)
+    print("remove_silence :", remove_silence)
+    print("================================\n")
+
+    # ----- Xử lý voices + Whisper -----
     for voice in voices:
         print("Voice:", voice)
-        print("ref_audio ", voices[voice]["ref_audio"])
+        print("  ref_audio (before):", voices[voice]["ref_audio"])
+        print("  ref_text  (before):", voices[voice].get("ref_text"))
+
+        if not voices[voice].get("ref_text"):
+            print(f"  -> Transcribing {voices[voice]['ref_audio']} with Faster-Whisper...")
+            segments, info = whisper_model.transcribe(voices[voice]["ref_audio"], language="vi")
+            voices[voice]["ref_text"] = "".join([segment.text for segment in segments])
+            print("  -> Transcribed ref_text:", voices[voice]["ref_text"])
+
         voices[voice]["ref_audio"], voices[voice]["ref_text"] = preprocess_ref_audio_text(
             voices[voice]["ref_audio"], voices[voice]["ref_text"]
         )
-        print("ref_audio_", voices[voice]["ref_audio"], "\n\n")
+        print("  ref_audio (final):", voices[voice]["ref_audio"])
+        print("  ref_text  (final):", voices[voice]["ref_text"], "\n")
 
     generated_audio_segments = []
     reg1 = r"(?=\[\w+\])"
     chunks = re.split(reg1, gen_text)
     reg2 = r"\[(\w+)\]"
-    for text in chunks:
+
+    for idx, text in enumerate(chunks):
         if not text.strip():
             continue
         match = re.match(reg2, text)
@@ -310,7 +350,18 @@ def main():
         ref_audio_ = voices[voice]["ref_audio"]
         ref_text_ = voices[voice]["ref_text"]
         gen_text_ = text.strip()
-        print(f"Voice: {voice}")
+
+        # ----- LOG từng batch infer -----
+        print("\n[PROCESS_BATCH]", f"idx={idx}")
+        print("  voice        :", voice)
+        print("  ref_audio_   :", ref_audio_)
+        print("  ref_text_    :", ref_text_)
+        print("  gen_text_    :", gen_text_)
+        print("  nfe_step     :", nfe_step)
+        print("  cfg_strength :", cfg_strength)
+        print("  speed        :", speed)
+        print("  fix_duration :", fix_duration)
+
         audio_segment, final_sample_rate, spectragram = infer_process(
             ref_audio_,
             ref_text_,
@@ -329,13 +380,12 @@ def main():
         generated_audio_segments.append(audio_segment)
 
         if save_chunk:
-            if len(gen_text_) > 200:
-                gen_text_ = gen_text_[:200] + " ... "
-            sf.write(
-                os.path.join(output_chunk_dir, f"{len(generated_audio_segments)-1}_{gen_text_}.wav"),
-                audio_segment,
-                final_sample_rate,
-            )
+            name_text = gen_text_
+            if len(name_text) > 200:
+                name_text = name_text[:200] + " ... "
+            chunk_path = os.path.join(output_chunk_dir, f"{len(generated_audio_segments)-1}_{name_text}.wav")
+            print("  -> save_chunk to:", chunk_path)
+            sf.write(chunk_path, audio_segment, final_sample_rate)
 
     if generated_audio_segments:
         final_wave = np.concatenate(generated_audio_segments)
@@ -345,10 +395,14 @@ def main():
 
         with open(wave_path, "wb") as f:
             sf.write(f.name, final_wave, final_sample_rate)
-            # Remove silence
+            print("\n[FINAL_OUTPUT]")
+            print("  wave_path:", f.name)
+            print("  sample_rate:", final_sample_rate)
             if remove_silence:
+                print("  -> remove_silence enabled")
                 remove_silence_for_generated_wav(f.name)
-            print(f.name)
+            else:
+                print("  -> remove_silence disabled")
 
 
 if __name__ == "__main__":

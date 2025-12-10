@@ -1,0 +1,100 @@
+body {
+    background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+    color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
+}
+
+.card {
+    background-color: #333333;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+}
+
+.btn-generate {
+    background-color: #ff6600;
+    border: none;
+    font-weight: bold;
+    font-size: 1.2rem;
+    padding: 12px 24px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-generate:hover {
+    background-color: #e65c00;
+    transform: scale(1.05);
+}
+
+.custom-textarea {
+    font-size: 1.1rem;
+    height: 200px;
+    border-radius: 10px;
+    background-color: #242424;
+    color: #ffffff;
+    border: 1px solid #444;
+}
+
+.custom-file {
+    background-color: #242424;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 10px;
+}
+
+.custom-select {
+    background-color: #242424;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 10px;
+}
+
+.voice-sample-item {
+    background-color: #2a2a2a;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.voice-sample-item:hover {
+    background-color: #333333;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border: 0.25em solid #ff6600;
+    border-right-color: transparent;
+}
+
+#loadingSpinner p {
+    color: #ff6600;
+}
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #dc3545;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    min-width: 250px;
+    text-align: center;
+}
+
+.toast.success {
+    background-color: #28a745;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
