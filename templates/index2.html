@@ -1,0 +1,343 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="vi">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Voice Cloning App</title>-->
+<!--    <style>-->
+<!--        * {-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            box-sizing: border-box;-->
+<!--        }-->
+
+<!--        body {-->
+<!--            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;-->
+<!--            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);-->
+<!--            min-height: 100vh;-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            padding: 20px;-->
+<!--        }-->
+
+<!--        .container {-->
+<!--            background: white;-->
+<!--            border-radius: 20px;-->
+<!--            box-shadow: 0 20px 60px rgba(0,0,0,0.3);-->
+<!--            padding: 40px;-->
+<!--            max-width: 600px;-->
+<!--            width: 100%;-->
+<!--        }-->
+
+<!--        h1 {-->
+<!--            color: #667eea;-->
+<!--            text-align: center;-->
+<!--            margin-bottom: 10px;-->
+<!--            font-size: 32px;-->
+<!--        }-->
+
+<!--        .subtitle {-->
+<!--            text-align: center;-->
+<!--            color: #666;-->
+<!--            margin-bottom: 30px;-->
+<!--            font-size: 14px;-->
+<!--        }-->
+
+<!--        .form-group {-->
+<!--            margin-bottom: 25px;-->
+<!--        }-->
+
+<!--        label {-->
+<!--            display: block;-->
+<!--            margin-bottom: 8px;-->
+<!--            color: #333;-->
+<!--            font-weight: 600;-->
+<!--            font-size: 14px;-->
+<!--        }-->
+
+<!--        .file-input-wrapper {-->
+<!--            position: relative;-->
+<!--            overflow: hidden;-->
+<!--            display: inline-block;-->
+<!--            width: 100%;-->
+<!--        }-->
+
+<!--        .file-input-wrapper input[type=file] {-->
+<!--            position: absolute;-->
+<!--            left: -9999px;-->
+<!--        }-->
+
+<!--        .file-input-label {-->
+<!--            display: block;-->
+<!--            padding: 15px;-->
+<!--            background: #f8f9fa;-->
+<!--            border: 2px dashed #667eea;-->
+<!--            border-radius: 10px;-->
+<!--            text-align: center;-->
+<!--            cursor: pointer;-->
+<!--            transition: all 0.3s;-->
+<!--        }-->
+
+<!--        .file-input-label:hover {-->
+<!--            background: #e9ecef;-->
+<!--            border-color: #764ba2;-->
+<!--        }-->
+
+<!--        .file-name {-->
+<!--            margin-top: 8px;-->
+<!--            font-size: 12px;-->
+<!--            color: #667eea;-->
+<!--            font-weight: 600;-->
+<!--        }-->
+
+<!--        textarea {-->
+<!--            width: 100%;-->
+<!--            padding: 15px;-->
+<!--            border: 2px solid #e0e0e0;-->
+<!--            border-radius: 10px;-->
+<!--            font-size: 14px;-->
+<!--            font-family: inherit;-->
+<!--            resize: vertical;-->
+<!--            min-height: 120px;-->
+<!--            transition: border-color 0.3s;-->
+<!--        }-->
+
+<!--        textarea:focus {-->
+<!--            outline: none;-->
+<!--            border-color: #667eea;-->
+<!--        }-->
+
+<!--        select {-->
+<!--            width: 100%;-->
+<!--            padding: 15px;-->
+<!--            border: 2px solid #e0e0e0;-->
+<!--            border-radius: 10px;-->
+<!--            font-size: 14px;-->
+<!--            font-family: inherit;-->
+<!--            background: white;-->
+<!--            cursor: pointer;-->
+<!--            transition: border-color 0.3s;-->
+<!--        }-->
+
+<!--        select:focus {-->
+<!--            outline: none;-->
+<!--            border-color: #667eea;-->
+<!--        }-->
+
+<!--        .btn {-->
+<!--            width: 100%;-->
+<!--            padding: 15px;-->
+<!--            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);-->
+<!--            color: white;-->
+<!--            border: none;-->
+<!--            border-radius: 10px;-->
+<!--            font-size: 16px;-->
+<!--            font-weight: 600;-->
+<!--            cursor: pointer;-->
+<!--            transition: transform 0.2s, box-shadow 0.2s;-->
+<!--        }-->
+
+<!--        .btn:hover {-->
+<!--            transform: translateY(-2px);-->
+<!--            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);-->
+<!--        }-->
+
+<!--        .btn:disabled {-->
+<!--            background: #ccc;-->
+<!--            cursor: not-allowed;-->
+<!--            transform: none;-->
+<!--        }-->
+
+<!--        .loading {-->
+<!--            display: none;-->
+<!--            text-align: center;-->
+<!--            margin-top: 20px;-->
+<!--        }-->
+
+<!--        .spinner {-->
+<!--            border: 3px solid #f3f3f3;-->
+<!--            border-top: 3px solid #667eea;-->
+<!--            border-radius: 50%;-->
+<!--            width: 40px;-->
+<!--            height: 40px;-->
+<!--            animation: spin 1s linear infinite;-->
+<!--            margin: 0 auto;-->
+<!--        }-->
+
+<!--        @keyframes spin {-->
+<!--            0% { transform: rotate(0deg); }-->
+<!--            100% { transform: rotate(360deg); }-->
+<!--        }-->
+
+<!--        .result {-->
+<!--            display: none;-->
+<!--            margin-top: 30px;-->
+<!--            padding: 20px;-->
+<!--            background: #f8f9fa;-->
+<!--            border-radius: 10px;-->
+<!--            text-align: center;-->
+<!--        }-->
+
+<!--        .result audio {-->
+<!--            width: 100%;-->
+<!--            margin: 15px 0;-->
+<!--        }-->
+
+<!--        .download-btn {-->
+<!--            display: inline-block;-->
+<!--            padding: 10px 30px;-->
+<!--            background: #28a745;-->
+<!--            color: white;-->
+<!--            text-decoration: none;-->
+<!--            border-radius: 8px;-->
+<!--            font-weight: 600;-->
+<!--            transition: background 0.3s;-->
+<!--        }-->
+
+<!--        .download-btn:hover {-->
+<!--            background: #218838;-->
+<!--        }-->
+
+<!--        .error {-->
+<!--            display: none;-->
+<!--            margin-top: 20px;-->
+<!--            padding: 15px;-->
+<!--            background: #f8d7da;-->
+<!--            border: 1px solid #f5c6cb;-->
+<!--            border-radius: 10px;-->
+<!--            color: #721c24;-->
+<!--        }-->
+
+<!--        .success {-->
+<!--            color: #28a745;-->
+<!--            font-weight: 600;-->
+<!--            margin-bottom: 10px;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <div class="container">-->
+<!--        <h1>🎤 Voice Cloning</h1>-->
+<!--        <p class="subtitle">Nhân bản giọng nói của bạn</p>-->
+
+<!--        <form id="voiceForm">-->
+<!--            <div class="form-group">-->
+<!--                <label>📁 File giọng nói mẫu (WAV, MP3, OGG, FLAC)</label>-->
+<!--                <div class="file-input-wrapper">-->
+<!--                    <input type="file" id="voiceFile" name="voice_file" accept=".wav,.mp3,.ogg,.flac" required>-->
+<!--                    <label for="voiceFile" class="file-input-label">-->
+<!--                        <span>📤 Chọn file giọng nói</span>-->
+<!--                    </label>-->
+<!--                </div>-->
+<!--                <div class="file-name" id="fileName"></div>-->
+<!--            </div>-->
+
+<!--            <div class="form-group">-->
+<!--                <label>🌍 Ngôn ngữ</label>-->
+<!--                <select id="language" name="language">-->
+<!--                    <option value="vi">Tiếng Việt</option>-->
+<!--                    <option value="en">English</option>-->
+<!--                    <option value="es">Español</option>-->
+<!--                    <option value="fr">Français</option>-->
+<!--                    <option value="de">Deutsch</option>-->
+<!--                    <option value="it">Italiano</option>-->
+<!--                    <option value="pt">Português</option>-->
+<!--                    <option value="pl">Polski</option>-->
+<!--                    <option value="tr">Türkçe</option>-->
+<!--                    <option value="ru">Русский</option>-->
+<!--                    <option value="nl">Nederlands</option>-->
+<!--                    <option value="cs">Čeština</option>-->
+<!--                    <option value="ar">العربية</option>-->
+<!--                    <option value="zh-cn">中文</option>-->
+<!--                    <option value="ja">日本語</option>-->
+<!--                    <option value="ko">한국어</option>-->
+<!--                </select>-->
+<!--            </div>-->
+
+<!--            <div class="form-group">-->
+<!--                <label>✍️ Văn bản cần đọc</label>-->
+<!--                <textarea id="text" name="text" placeholder="Nhập văn bản bạn muốn giọng nói đọc..." required></textarea>-->
+<!--            </div>-->
+
+<!--            <button type="submit" class="btn" id="submitBtn">-->
+<!--                🎵 Tạo giọng nói-->
+<!--            </button>-->
+<!--        </form>-->
+
+<!--        <div class="loading" id="loading">-->
+<!--            <div class="spinner"></div>-->
+<!--            <p style="margin-top: 15px; color: #667eea; font-weight: 600;">Đang xử lý...</p>-->
+<!--        </div>-->
+
+<!--        <div class="error" id="error"></div>-->
+
+<!--        <div class="result" id="result">-->
+<!--            <p class="success">✅ Tạo giọng nói thành công!</p>-->
+<!--            <audio controls id="audioPlayer"></audio>-->
+<!--            <br>-->
+<!--            <a href="#" class="download-btn" id="downloadBtn" download>⬇️ Tải xuống</a>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <script>-->
+<!--        const form = document.getElementById('voiceForm');-->
+<!--        const voiceFile = document.getElementById('voiceFile');-->
+<!--        const fileName = document.getElementById('fileName');-->
+<!--        const submitBtn = document.getElementById('submitBtn');-->
+<!--        const loading = document.getElementById('loading');-->
+<!--        const result = document.getElementById('result');-->
+<!--        const error = document.getElementById('error');-->
+<!--        const audioPlayer = document.getElementById('audioPlayer');-->
+<!--        const downloadBtn = document.getElementById('downloadBtn');-->
+
+<!--        voiceFile.addEventListener('change', function() {-->
+<!--            if (this.files && this.files[0]) {-->
+<!--                fileName.textContent = '✓ ' + this.files[0].name;-->
+<!--            } else {-->
+<!--                fileName.textContent = '';-->
+<!--            }-->
+<!--        });-->
+
+<!--        form.addEventListener('submit', async function(e) {-->
+<!--            e.preventDefault();-->
+
+<!--            const formData = new FormData(form);-->
+
+<!--            // Hide previous results-->
+<!--            result.style.display = 'none';-->
+<!--            error.style.display = 'none';-->
+
+<!--            // Show loading-->
+<!--            loading.style.display = 'block';-->
+<!--            submitBtn.disabled = true;-->
+
+<!--            try {-->
+<!--                const response = await fetch('/clone', {-->
+<!--                    method: 'POST',-->
+<!--                    body: formData-->
+<!--                });-->
+
+<!--                const data = await response.json();-->
+
+<!--                if (response.ok && data.success) {-->
+<!--                    // Show result-->
+<!--                    audioPlayer.src = '/play/' + data.output_file;-->
+<!--                    downloadBtn.href = '/download/' + data.output_file;-->
+<!--                    result.style.display = 'block';-->
+<!--                } else {-->
+<!--                    // Show error-->
+<!--                    error.textContent = data.error || 'Có lỗi xảy ra';-->
+<!--                    error.style.display = 'block';-->
+<!--                }-->
+<!--            } catch (err) {-->
+<!--                error.textContent = 'Không thể kết nối đến server';-->
+<!--                error.style.display = 'block';-->
+<!--            } finally {-->
+<!--                loading.style.display = 'none';-->
+<!--                submitBtn.disabled = false;-->
+<!--            }-->
+<!--        });-->
+<!--    </script>-->
+<!--</body>-->
+<!--</html>-->

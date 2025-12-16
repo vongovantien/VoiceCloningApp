@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UIT Voice Cloning</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container-fluid py-4 px-4">
+        <h1 class="text-center text-warning mb-4">
+            <i class="fas fa-microphone-alt me-2"></i>UIT Voice Cloning
+        </h1>
+
+        <div class="row g-4">
+            <!-- Input Panel -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card shadow-lg rounded-4 p-4 h-100">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-sliders text-primary me-2"></i>Cấu hình
+                    </h5>
+                    <form id="synthesisForm" method="POST" enctype="multipart/form-data">
+                        <!-- Voice Sample -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-headphones text-primary"></i>
+                                Chọn giọng mẫu
+                            </label>
+                            <div class="voice-sample-container">
+                                {% for voice in voice_samples %}
+                                <div class="voice-sample-item mb-2 d-flex align-items-center gap-3">
+                                    <input type="radio" name="voice_sample" value="{{ voice.id }}"
+                                        id="voice_{{ voice.id }}" {% if loop.index==1 %}checked{% endif %}>
+                                    <label for="voice_{{ voice.id }}" class="mb-0 d-flex align-items-center gap-2">
+                                        {% if voice.id == 'male' %}
+                                        <span class="voice-icon">
+                                            <i class="fas fa-broadcast-tower text-primary"></i>
+                                        </span>
+                                        {% else %}
+                                        <span class="voice-icon">
+                                            <i class="fas fa-book-open text-secondary"></i>
+                                        </span>
+                                        {% endif %}
+                                        <span class="voice-name">{{ voice.name }}</span>
+                                    </label>
+                                    <div class="ms-auto d-flex gap-2">
+                                        <button type="button" class="btn btn-sm listen-btn"
+                                            data-audio="{{ url_for('static', filename=voice.file_path) }}">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm stop-listen-btn">
+                                            <i class="fas fa-stop"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Text Input -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-keyboard text-primary"></i>
+                                Nhập văn bản
+                            </label>
+                            <textarea class="form-control custom-textarea" name="text"
+                                placeholder="✍️ Nhập văn bản cần chuyển thành giọng nói..."></textarea>
+                        </div>
+
+                        <!-- Audio Input -->
+                        <div class="mb-4" id="audioInputGroup">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-file-audio text-primary"></i>
+                                Audio tùy chỉnh (Tùy chọn)
+                            </label>
+                            <input type="file" class="form-control custom-file" name="audio" id="audioInput"
+                                accept="audio/*">
+                            <div class="mb-3 mt-3">
+                                <button type="button" id="recordBtn" class="btn btn-outline-warning w-100">
+                                    <i class="fas fa-microphone me-2"></i>Ghi âm
+                                </button>
+                            </div>
+                            <div id="audioPreview" class="mt-3" style="display:none;">
+                                <h6><i class="fas fa-headphones me-2"></i>Xem trước audio</h6>
+                                <audio id="uploadedAudioPlayer" controls class="w-100"></audio>
+                            </div>
+                        </div>
+
+                        <!-- Language -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-globe text-primary"></i>
+                                Ngôn ngữ
+                            </label>
+                            <select class="form-select custom-select" name="lang">
+                                <option value="vi" selected>🇻🇳 Tiếng Việt</option>
+                                <option value="en">🇺🇸 English</option>
+                                <option value="zh">🇨🇳 中文</option>
+                            </select>
+                        </div>
+
+                        <!-- Generate Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-generate btn-lg rounded-pill">
+                                <i class="fas fa-wand-magic-sparkles me-2"></i>Tạo Audio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card shadow-lg rounded-4 p-4 h-100">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-volume-high text-success me-2"></i>Kết quả
+                    </h5>
+
+                    <div id="loadingSpinner" class="text-center py-5" style="display:none;">
+                        <div class="progress-container mb-4">
+                            <div class="progress-circle">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="progress-bg" cx="50" cy="50" r="45"></circle>
+                                    <circle class="progress-bar" cx="50" cy="50" r="45" id="progressCircle"></circle>
+                                </svg>
+                                <div class="progress-text">
+                                    <span id="progressPercent">0</span>%
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-1" id="loadingStatus">
+                            <i class="fas fa-cog fa-spin me-2"></i>Đang tải model...
+                        </p>
+                        <small class="text-muted" id="loadingDetail">Vui lòng đợi</small>
+                    </div>
+
+                    <div id="audioResult" class="w-100" style="display:none;">
+                        <div class="result-header d-flex align-items-center mb-3">
+                            <span class="badge bg-success me-2">
+                                <i class="fas fa-check"></i>
+                            </span>
+                            <span class="fw-bold text-success">Tạo thành công!</span>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="stats-grid mb-3">
+                            <div class="stat-item">
+                                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="statDuration">--</span>
+                                    <span class="stat-label">Thời lượng</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="statGenTime">--</span>
+                                    <span class="stat-label">Thời gian xử lý</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon"><i class="fas fa-font"></i></div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="statChars">--</span>
+                                    <span class="stat-label">Ký tự</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon"><i class="fas fa-align-left"></i></div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="statWords">--</span>
+                                    <span class="stat-label">Từ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quality Metrics -->
+<!--                        <div class="quality-metrics mb-3">-->
+<!--                            <h6 class="mb-2"><i class="fas fa-chart-line me-2"></i>Chất lượng (WER/CER)</h6>-->
+<!--                            <div class="d-flex gap-3">-->
+<!--                                <div class="metric-badge wer">-->
+<!--                                    <span class="metric-label">WER</span>-->
+<!--                                    <span class="metric-value" id="statWER">&#45;&#45;</span>-->
+<!--                                </div>-->
+<!--                                <div class="metric-badge cer">-->
+<!--                                    <span class="metric-label">CER</span>-->
+<!--                                    <span class="metric-value" id="statCER">&#45;&#45;</span>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <small class="text-muted mt-1 d-block">Càng thấp càng tốt (0% = hoàn hảo)</small>-->
+<!--                        </div>-->
+
+                        <audio id="generatedAudio" controls class="w-100 mb-3">
+                            <source id="audioSource" src="" type="audio/wav">
+                        </audio>
+                        <a id="downloadLink" href="#" download class="btn btn-outline-success rounded-pill w-100">
+                            <i class="fas fa-download me-2"></i>Tải xuống
+                        </a>
+
+                        <!-- Mel Spectrogram Display -->
+                        <div id="spectrogramContainer" class="mt-4" style="display:none;">
+                            <h6 class="text-info mb-3">
+                                <i class="fas fa-chart-area me-2"></i>Mel Spectrogram
+                            </h6>
+                            <img id="spectrogramImage" src="" alt="Mel Spectrogram" class="img-fluid rounded shadow"
+                                style="max-width: 100%;">
+                        </div>
+                    </div>
+
+                    <div id="noAudioPlaceholder" class="text-center py-5" style="display:block;">
+                        <div class="mb-4">
+                            <i class="fas fa-volume-up fa-4x text-muted opacity-25"></i>
+                        </div>
+                        <p id="noAudio" class="text-muted mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Chưa có audio nào
+                        </p>
+                        <small class="text-muted">Nhập văn bản và nhấn "Tạo Audio" để bắt đầu</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Panel -->
+            <div class="col-lg-4 col-md-12">
+                <div class="card shadow-lg rounded-4 p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-clock-rotate-left text-info me-2"></i>Lịch sử
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshHistory">
+                            <i class="fas fa-refresh"></i>
+                        </button>
+                    </div>
+
+                    <div id="historyList" class="history-container">
+                        <div class="text-center py-5 text-muted" id="historyPlaceholder">
+                            <i class="fas fa-history fa-3x mb-3 opacity-25"></i>
+                            <p class="mb-0">Chưa có lịch sử nào</p>
+                            <small>Các audio đã tạo sẽ hiển thị ở đây</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="previewAudio" style="display:none;"></audio>
+    <audio id="historyAudio" style="display:none;"></audio>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>

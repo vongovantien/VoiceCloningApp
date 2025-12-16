@@ -1,1 +1,218 @@
-# VoiceCloningApp
+# 🎙️ Vietnamese Voice Cloning App
+
+<p align="center">
+  <img src="tests/ui_screenshot.png" alt="Voice Cloning App UI" width="800">
+</p>
+
+<p align="center">
+  <img src="tests/f5-tts.png" alt="F5-TTS Architecture" width="600">
+</p>
+
+<p align="center">
+  <strong>Ứng dụng nhân bản giọng nói tiếng Việt sử dụng F5-TTS</strong>
+</p>
+
+<p align="center">
+  <a href="#tính-năng">Tính năng</a> •
+  <a href="#demo">Demo</a> •
+  <a href="#cài-đặt">Cài đặt</a> •
+  <a href="#sử-dụng">Sử dụng</a> •
+  <a href="#fine-tuning">Fine-tuning</a>
+</p>
+
+---
+
+## ✨ Tính năng
+
+- 🗣️ **Nhân bản giọng nói** - Clone bất kỳ giọng nói nào chỉ với vài giây audio mẫu
+- 🇻🇳 **Tối ưu cho tiếng Việt** - Model được fine-tune đặc biệt cho tiếng Việt
+- 🌐 **Giao diện Web** - UI đẹp mắt, dễ sử dụng với Flask
+- 🎤 **Ghi âm trực tiếp** - Ghi âm giọng mẫu ngay trên trình duyệt
+- 📊 **Mel Spectrogram** - Hiển thị spectrogram của audio được tạo
+- 📜 **Lịch sử** - Lưu trữ và quản lý các audio đã tạo
+- ⚡ **GPU Acceleration** - Hỗ trợ CUDA cho tốc độ inference nhanh
+
+## 🚀 Demo
+
+Thử nghiệm online tại: **[Hugging Face Space](https://huggingface.co/spaces/hynt/F5-TTS-Vietnamese-100h)**
+
+## 📋 Yêu cầu hệ thống
+
+- Python 3.10+
+- CUDA 11.8+ (recommended) hoặc CPU
+- RAM: 8GB+ (16GB recommended)
+- VRAM: 6GB+ (cho GPU inference)
+
+## 🔧 Cài đặt
+
+### 1. Clone repository
+
+```bash
+git clone https://github.com/your-username/VoiceCloningApp.git
+cd VoiceCloningApp
+```
+
+### 2. Tạo môi trường ảo
+
+```bash
+# Sử dụng Conda
+conda create -n voice-cloning python=3.10
+conda activate voice-cloning
+
+# Hoặc sử dụng venv
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+```
+
+### 3. Cài đặt PyTorch
+
+```bash
+# Với CUDA 12.4
+pip install torch==2.4.0+cu124 torchaudio==2.4.0+cu124 --extra-index-url https://download.pytorch.org/whl/cu124
+
+# Với CUDA 11.8
+pip install torch==2.4.0+cu118 torchaudio==2.4.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+
+# CPU only
+pip install torch==2.4.0 torchaudio==2.4.0
+```
+
+### 4. Cài đặt F5-TTS module
+
+```bash
+pip install -e .
+```
+
+### 5. Cài đặt dependencies bổ sung (Linux)
+
+```bash
+sudo apt-get update
+sudo apt-get install sox ffmpeg
+```
+
+### 6. Tải model checkpoint
+
+Đặt các file sau vào thư mục tương ứng:
+- Checkpoint model: `ckpts/your_training_dataset/model_last.pt`
+- Vocab file: `data/Emilia_ZH_EN_pinyin/vocab.txt`
+
+## 🖥️ Sử dụng
+
+### Chạy Web Server
+
+```bash
+python app.py
+```
+
+Mở trình duyệt và truy cập: **http://localhost:5000**
+
+### Các bước tạo audio
+
+1. **Chọn giọng mẫu** - Chọn từ các giọng có sẵn hoặc upload audio tùy chỉnh
+2. **Nhập văn bản** - Nhập nội dung cần chuyển thành giọng nói
+3. **Tạo Audio** - Nhấn nút "Tạo Audio" và đợi kết quả
+4. **Tải xuống** - Nghe thử và tải audio về máy
+
+### CLI Inference
+
+```bash
+bash infer.sh
+```
+
+Hoặc sử dụng trực tiếp:
+
+```bash
+f5-tts_infer-cli \
+    --model F5TTS_Base \
+    --ckpt_file ckpts/your_training_dataset/model_last.pt \
+    --vocab_file data/Emilia_ZH_EN_pinyin/vocab.txt \
+    --ref_audio ref.wav \
+    --ref_text "Text của audio tham chiếu" \
+    --gen_text "Text cần tạo giọng nói"
+```
+
+## 🎓 Fine-tuning
+
+### Yêu cầu dữ liệu
+
+- **100+ giờ** audio với transcript chính xác (cho giọng cụ thể)
+- **1000+ giờ** audio (cho voice cloning đa dạng speakers)
+
+### Các bước fine-tune
+
+1. Chuẩn bị `audio_name` và transcriptions tương ứng
+2. Thêm vocabulary mới vào pretrained model
+3. Mở rộng embedding để hỗ trợ vocabulary mới
+4. Thực hiện feature extraction
+5. Fine-tune model
+
+```bash
+bash fine_tuning.sh
+```
+
+### 💡 Tips
+
+**Training:**
+- Dữ liệu với transcript chính xác rất quan trọng - càng nhiều càng tốt
+- Điều này giúp model generalize tốt hơn, giảm WER và hallucinations
+
+**Inference:**
+- Chọn audio mẫu rõ ràng, ít tạp âm, dưới 10 giây
+- Cung cấp reference text chính xác để có chất lượng tốt nhất
+- Với đoạn văn dài, sử dụng hàm `chunk_text` tùy chỉnh trong `src/f5_tts/infer/utils_infer.py`
+
+## 📁 Cấu trúc thư mục
+
+```
+VoiceCloningApp/
+├── app.py                 # Flask web server
+├── templates/             # HTML templates
+│   └── index.html
+├── static/
+│   ├── css/style.css     # Styles
+│   ├── js/script.js      # Frontend logic
+│   ├── voices/           # Voice samples
+│   └── output/           # Generated audio files
+├── src/f5_tts/           # F5-TTS source code
+│   ├── infer/            # Inference utilities
+│   ├── train/            # Training scripts
+│   └── model/            # Model architecture
+├── ckpts/                # Model checkpoints
+├── data/                 # Vocab and data files
+└── fine_tuning.sh        # Fine-tuning script
+```
+
+## 🐳 Docker
+
+```bash
+docker build -t voice-cloning .
+docker run -p 5000:5000 --gpus all voice-cloning
+```
+
+## 📊 API Endpoints
+
+| Endpoint | Method | Mô tả |
+|----------|--------|-------|
+| `/` | GET/POST | Trang chính & tạo audio |
+| `/health` | GET | Kiểm tra trạng thái server |
+| `/models/status` | GET | Trạng thái các model |
+| `/models/unload` | POST | Giải phóng VRAM |
+| `/api/history` | GET | Lấy lịch sử audio |
+| `/api/history/<id>` | DELETE | Xóa audio khỏi lịch sử |
+| `/cleanup` | POST | Dọn dẹp file cũ |
+
+## 🔗 Tham khảo
+
+- [F5-TTS Original Repository](https://github.com/SWivid/F5-TTS)
+- [Hugging Face Demo](https://huggingface.co/spaces/hynt/F5-TTS-Vietnamese-100h)
+
+## 📄 License
+
+MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
+
+---
+
+<p align="center">
+  Made with ❤️ for Vietnamese Speech Synthesis
+</p>
