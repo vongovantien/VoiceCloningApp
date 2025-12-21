@@ -1,16 +1,13 @@
 # Flask Web Framework
 Flask==3.0.0
-Werkzeug==3.0.1
+Werkzeug==3.0.0
+gunicorn==21.2.0
 
 # Authentication  
 bcrypt==4.1.2
 PyJWT==2.8.0
 
-# Audio Processing
-librosa==0.10.1
-soundfile==0.12.1
-scipy==1.11.4
-numpy==1.26.2
+# Database (SQLite is built-in)
 
 # HTTP Requests
 requests==2.31.0
@@ -19,7 +16,4 @@ requests==2.31.0
 Pillow==10.1.0
 
 # Utilities
-click==8.1.7
-tqdm==4.66.1
-psutil==5.9.7
-pyyaml==6.0.1
+python-dotenv==1.0.0
