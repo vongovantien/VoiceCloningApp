@@ -1,11 +1,20 @@
 import sys
+import io
 import os
+
+# Fix UTF-8 encoding for Windows console (Vietnamese text support)
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 import sqlite3
 import time
 import traceback
 import uuid
 import librosa
-import librosa.display
+try:
+    import librosa.display
+except (ImportError, ModuleNotFoundError):
+    pass  # librosa.display may not be available in some versions
 import matplotlib.pyplot as plt
 import numpy as np
 import soundfile as sf
@@ -24,9 +33,33 @@ from f5_tts.infer.utils_infer import (
 )
 from f5_tts.model import DiT, UNetT
 from faster_whisper import WhisperModel
-from flask import Flask, request, jsonify, render_template, g
+from flask import Flask, request, jsonify, render_template, g, session, redirect, url_for
+
+# Import configuration
+from config import get_config
 
 app = Flask(__name__, static_url_path="/static", static_folder="static", template_folder="templates")
+
+# Load configuration
+config = get_config()
+app.config.from_object(config)
+app.secret_key = app.config.get('SECRET_KEY', 'default-secret-key')
+
+# Register blueprints
+from auth import auth_bp, mail
+from stories import stories_bp
+from history import history_bp
+from admin import admin_bp
+from upload import upload_bp
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(stories_bp)
+app.register_blueprint(history_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(upload_bp)
+
+# Initialize Flask-Mail
+mail.init_app(app)
 
 # Configuration
 OUTPUT_DIR = "static/output"
@@ -48,14 +81,14 @@ MODEL_NAME = "F5TTS_Base"  # Hoặc model bạn đang dùng
 VOCAB_FILE = "data/Emilia_ZH_EN_pinyin/vocab.txt"
 CKPT_FILE = "ckpts/your_training_dataset/model_last.pt"
 
-# Database config
-DATABASE = os.path.join(app.root_path, 'app.db')
+# Database config - uses DATABASE from config.py
 
 
 def get_db():
+    """Get database connection using config['DATABASE']"""
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(app.config['DATABASE'])
         db.row_factory = sqlite3.Row
     return db
 
@@ -509,7 +542,14 @@ def transcribe_audio(audio_path, max_attempts=3):
     return None
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
+def home():
+    """Redirect to stories page"""
+    from flask import redirect, url_for
+    return redirect(url_for('stories_page'))
+
+
+@app.route("/voice-cloning", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
         print("\n" + "=" * 60)
@@ -684,6 +724,84 @@ def health():
         "cuda_memory_allocated": f"{torch.cuda.memory_allocated() / 1024 ** 3:.2f} GB" if torch.cuda.is_available() else "N/A",
         "cuda_memory_reserved": f"{torch.cuda.memory_reserved() / 1024 ** 3:.2f} GB" if torch.cuda.is_available() else "N/A"
     })
+
+
+# ==========================================
+# API ROUTES - VOICE SAMPLES
+# ==========================================
+
+@app.route("/api/voices")
+def get_voices():
+    """Get list of available voice samples"""
+    try:
+        db = get_db()
+        voices = db.execute('''
+            SELECT sample_id, name, description, gender, style, language
+            FROM voice_samples
+            WHERE is_active = 1
+            ORDER BY sample_id
+        ''').fetchall()
+        
+        return jsonify({
+            'status': 'ok',
+            'voices': [dict(v) for v in voices]
+        })
+    except Exception as e:
+        print(f"[GET VOICES ERROR] {e}")
+        # Return default voices if database not available
+        return jsonify({
+            'status': 'ok',
+            'voices': [
+                {'sample_id': 1, 'name': 'Giọng Nam', 'description': 'Giọng nam trầm ấm', 'gender': 'male'},
+                {'sample_id': 2, 'name': 'Giọng Nữ', 'description': 'Giọng nữ nhẹ nhàng', 'gender': 'female'}
+            ]
+        })
+
+
+# ==========================================
+# PAGE ROUTES
+# ==========================================
+
+@app.route("/login")
+def login_page():
+    """Login/Register page"""
+    return render_template("login.html")
+
+
+@app.route("/stories")
+def stories_page():
+    """Stories listing page"""
+    return render_template("stories.html")
+
+
+@app.route("/story/<int:story_id>")
+def story_detail_page(story_id):
+    """Story detail page"""
+    return render_template("story_detail.html", story_id=story_id)
+
+
+@app.route("/profile")
+def profile_page():
+    """User profile page"""
+    return render_template("profile.html")
+
+
+@app.route("/favorites")
+def favorites_page():
+    """User favorites page"""
+    return render_template("favorites.html")
+
+
+@app.route("/history")
+def history_page():
+    """User listening history page"""
+    return render_template("history_page.html")
+
+
+@app.route("/reset-password")
+def reset_password_page():
+    """Reset password page"""
+    return render_template("reset_password.html")
 
 
 @app.route("/models/status")

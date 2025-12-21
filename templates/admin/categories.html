@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý thể loại - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            padding: 20px;
+            border-right: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            padding: 12px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--primary-color);
+        }
+
+        .nav-link i {
+            width: 25px;
+            margin-right: 10px;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+        }
+
+        .card-custom {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+        }
+
+        .table-custom {
+            color: var(--text-primary);
+        }
+
+        .table-custom th {
+            border-color: var(--border-color);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .table-custom td {
+            border-color: var(--border-color);
+            vertical-align: middle;
+        }
+
+        .theme-toggle-admin {
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle-admin:hover {
+            background: var(--primary-color);
+            color: var(--bg-primary);
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header {
+            border-color: var(--border-color);
+        }
+
+        .form-control,
+        .form-select {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--bg-tertiary);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+        }
+
+        .category-icon {
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="/admin" class="sidebar-brand">
+                <i class="fas fa-book-open me-2"></i>Admin
+            </a>
+            <button id="themeToggle" class="theme-toggle-admin" title="Chuyển đổi theme">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+        <hr class="border-secondary my-3">
+        <nav class="sidebar-nav mt-3">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin">
+                        <i class="fas fa-chart-pie"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="fas fa-users"></i>Người dùng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/roles">
+                        <i class="fas fa-user-tag"></i>Vai trò
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/categories">
+                        <i class="fas fa-folder"></i>Thể loại
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/stories">
+                        <i class="fas fa-book"></i>Truyện
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="/">
+                        <i class="fas fa-home"></i>Về trang chủ
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1">Quản lý thể loại</h2>
+                <p class="text-muted mb-0">Quản lý các thể loại truyện</p>
+            </div>
+            <button class="btn btn-warning" onclick="showAddCategoryModal()">
+                <i class="fas fa-plus me-2"></i>Thêm thể loại
+            </button>
+        </div>
+
+        <!-- Categories Table -->
+        <div class="card card-custom">
+            <div class="card-body p-0">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px">Icon</th>
+                            <th>Tên thể loại</th>
+                            <th>Mô tả</th>
+                            <th>Số truyện</th>
+                            <th>Thứ tự</th>
+                            <th>Trạng thái</th>
+                            <th style="width: 150px">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriesTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Thêm thể loại</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="categoryForm">
+                        <input type="hidden" id="categoryId">
+                        <div class="mb-3">
+                            <label class="form-label">Tên thể loại *</label>
+                            <input type="text" class="form-control" id="categoryName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mô tả</label>
+                            <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Icon (emoji)</label>
+                                <input type="text" class="form-control" id="categoryIcon" placeholder="📚">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Thứ tự hiển thị</label>
+                                <input type="number" class="form-control" id="categoryOrder" value="0" min="0">
+                            </div>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="categoryActive" checked>
+                            <label class="form-check-label" for="categoryActive">Kích hoạt</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-warning" onclick="saveCategory()">
+                        <i class="fas fa-save me-1"></i>Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check admin
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        if (!user || !user.is_admin) {
+            window.location.href = '/login';
+        }
+
+        const token = localStorage.getItem('token');
+        let categoryModal;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
+            loadCategories();
+        });
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/admin/api/categories', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    const tbody = document.getElementById('categoriesTable');
+                    tbody.innerHTML = data.categories.map(cat => `
+                        <tr>
+                            <td><span class="category-icon">${cat.icon || '📚'}</span></td>
+                            <td><strong>${cat.name}</strong></td>
+                            <td class="text-muted">${cat.description || '-'}</td>
+                            <td><span class="badge bg-info">${cat.story_count || 0}</span></td>
+                            <td>${cat.display_order}</td>
+                            <td>
+                                <span class="badge ${cat.is_active ? 'bg-success' : 'bg-secondary'}">
+                                    ${cat.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-warning me-1" onclick="editCategory(${cat.category_id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-${cat.is_active ? 'danger' : 'success'} me-1" 
+                                        onclick="toggleCategoryStatus(${cat.category_id})">
+                                    <i class="fas fa-${cat.is_active ? 'ban' : 'check'}"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${cat.category_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        function showAddCategoryModal() {
+            document.getElementById('modalTitle').textContent = 'Thêm thể loại';
+            document.getElementById('categoryForm').reset();
+            document.getElementById('categoryId').value = '';
+            document.getElementById('categoryActive').checked = true;
+            document.getElementById('categoryOrder').value = 0;
+            categoryModal.show();
+        }
+
+        async function editCategory(categoryId) {
+            try {
+                const res = await fetch(`/admin/api/categories/${categoryId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    const cat = data.category;
+                    document.getElementById('modalTitle').textContent = 'Sửa thể loại';
+                    document.getElementById('categoryId').value = cat.category_id;
+                    document.getElementById('categoryName').value = cat.name;
+                    document.getElementById('categoryDescription').value = cat.description || '';
+                    document.getElementById('categoryIcon').value = cat.icon || '';
+                    document.getElementById('categoryOrder').value = cat.display_order || 0;
+                    document.getElementById('categoryActive').checked = cat.is_active;
+                    categoryModal.show();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function saveCategory() {
+            const categoryId = document.getElementById('categoryId').value;
+            const data = {
+                name: document.getElementById('categoryName').value,
+                description: document.getElementById('categoryDescription').value,
+                icon: document.getElementById('categoryIcon').value,
+                display_order: parseInt(document.getElementById('categoryOrder').value) || 0,
+                is_active: document.getElementById('categoryActive').checked ? 1 : 0
+            };
+
+            try {
+                const url = categoryId ? `/admin/api/categories/${categoryId}` : '/admin/api/categories';
+                const method = categoryId ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+                if (result.status === 'ok') {
+                    categoryModal.hide();
+                    loadCategories();
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Có lỗi xảy ra');
+            }
+        }
+
+        async function toggleCategoryStatus(categoryId) {
+            try {
+                const res = await fetch(`/admin/api/categories/${categoryId}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    loadCategories();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function deleteCategory(categoryId) {
+            if (!confirm('Xác nhận xóa thể loại này?')) return;
+
+            try {
+                const res = await fetch(`/admin/api/categories/${categoryId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    loadCategories();
+                } else {
+                    alert(data.error || 'Không thể xóa thể loại');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+    </script>
+</body>
+
+</html>

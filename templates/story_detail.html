@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Chi tiết truyện - Story Telling App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <style>
+        .story-header {
+            padding: 100px 0 40px;
+        }
+
+        .story-cover-large {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .story-cover-placeholder-large {
+            width: 100%;
+            max-width: 300px;
+            height: 400px;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .story-cover-placeholder-large i {
+            font-size: 6rem;
+            color: var(--text-muted);
+        }
+
+        .story-info {
+            color: var(--text-primary);
+        }
+
+        .story-title-large {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .story-meta-badge {
+            display: inline-block;
+            background: var(--primary-light);
+            padding: 8px 15px;
+            border-radius: 25px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .story-stats {
+            display: flex;
+            gap: 30px;
+            margin: 25px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .voice-selector {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .voice-option {
+            background: var(--bg-tertiary) !important;
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .voice-option:hover {
+            background: var(--bg-secondary) !important;
+        }
+
+        .voice-option.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-light) !important;
+        }
+
+        .btn-listen {
+            background: var(--gradient-primary);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: var(--transition);
+            color: white;
+        }
+
+        .btn-listen:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-favorite {
+            background: var(--bg-tertiary) !important;
+            border: 1px solid var(--border-color) !important;
+            padding: 15px 30px;
+            border-radius: 30px;
+            color: var(--text-primary);
+        }
+
+        .btn-favorite:hover,
+        .btn-favorite.active {
+            background: var(--danger-color) !important;
+            border-color: var(--danger-color) !important;
+            color: white;
+        }
+
+        .story-content {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+
+        .story-content h5 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .story-text {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 1.1rem;
+            white-space: pre-wrap;
+        }
+
+        .audio-player-container {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .loading-spinner {
+            display: none;
+        }
+
+        .loading-spinner.show {
+            display: block;
+        }
+
+        /* Voice tabs styling */
+        .nav-pills .nav-link {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            margin-right: 10px;
+        }
+
+        .nav-pills .nav-link:hover {
+            background: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Navbar styling */
+        .navbar-custom {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Light theme navbar */
+        [data-theme="light"] .navbar-custom {
+            background: rgba(245, 243, 239, 0.95) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link {
+            color: #333 !important;
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        [data-theme="light"] .navbar-custom .navbar-brand {
+            color: var(--primary-color) !important;
+        }
+    </style>
+</head>
+
+<body class="story-detail-page">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/" style="color: var(--primary-color);">
+                <i class="fas fa-book-open me-2"></i>Story Telling
+            </a>
+            <div class="navbar-nav ms-auto align-items-center">
+                <a class="nav-link" href="/stories"><i class="fas fa-books me-1"></i>Kho truyện</a>
+                <button id="themeToggle" class="theme-toggle ms-3" title="Chuyển đổi theme">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Story Header -->
+    <header class="story-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-4 text-center mb-4 mb-md-0">
+                    <div id="storyCover"></div>
+                </div>
+                <div class="col-md-8 story-info">
+                    <div id="storyCategory" class="story-meta-badge">
+                        <i class="fas fa-folder me-1"></i><span></span>
+                    </div>
+                    <div id="storyCountry" class="story-meta-badge"></div>
+                    <h1 class="story-title-large" id="storyTitle">Đang tải...</h1>
+                    <p class="text-white-50 mb-3" id="storySummary"></p>
+
+                    <div class="story-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statFavorites">0</div>
+                            <div class="stat-label"><i class="fas fa-heart me-1"></i>Yêu thích</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statViews">0</div>
+                            <div class="stat-label"><i class="fas fa-eye me-1"></i>Lượt xem</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statDuration">--</div>
+                            <div class="stat-label"><i class="fas fa-clock me-1"></i>Phút</div>
+                        </div>
+                    </div>
+
+                    <!-- Voice Selector -->
+                    <div class="voice-selector">
+                        <h6 class="text-white mb-3"><i class="fas fa-microphone me-2"></i>Chọn giọng đọc</h6>
+
+                        <!-- Voice Selection Tabs -->
+                        <ul class="nav nav-pills mb-3" id="voiceTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="sample-tab" data-bs-toggle="pill"
+                                    data-bs-target="#sampleVoice" type="button">
+                                    <i class="fas fa-volume-up me-1"></i>Giọng mẫu
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="upload-tab" data-bs-toggle="pill"
+                                    data-bs-target="#uploadVoice" type="button">
+                                    <i class="fas fa-upload me-1"></i>Giọng của bạn
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="voiceTabContent">
+                            <!-- Sample Voices Tab -->
+                            <div class="tab-pane fade show active" id="sampleVoice" role="tabpanel">
+                                <div class="row g-3" id="voiceOptions">
+                                    <!-- Voice options will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Upload Voice Tab -->
+                            <div class="tab-pane fade" id="uploadVoice" role="tabpanel">
+                                <div class="upload-voice-area p-3 rounded"
+                                    style="background: rgba(255,255,255,0.1); border: 2px dashed rgba(255,255,255,0.3);">
+                                    <input type="file" class="form-control bg-dark text-white border-0 mb-2"
+                                        id="customVoiceFile" accept="audio/*">
+                                    <small class="text-white-50">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Upload file audio giọng của bạn để nhân bản
+                                    </small>
+                                    <div id="uploadedVoicePreview" class="mt-2" style="display: none;">
+                                        <audio id="customVoicePlayer" controls class="w-100"
+                                            style="height: 40px;"></audio>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 flex-wrap">
+                        <button class="btn btn-listen" id="listenBtn">
+                            <i class="fas fa-headphones me-2"></i>Nghe truyện
+                        </button>
+                        <button class="btn btn-favorite" id="favoriteBtn">
+                            <i class="fas fa-heart me-2"></i>Yêu thích
+                        </button>
+                    </div>
+
+                    <!-- Audio Player -->
+                    <div class="audio-player-container" id="audioContainer" style="display: none;">
+                        <div class="loading-spinner text-center py-3" id="loadingSpinner">
+                            <div class="spinner-border text-warning" role="status"></div>
+                            <p class="text-white-50 mt-2 mb-0">Đang tạo audio...</p>
+                        </div>
+                        <audio id="audioPlayer" controls class="w-100" style="display: none;"></audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Story Content -->
+    <main class="container pb-5">
+        <div class="story-content">
+            <h5><i class="fas fa-book-open me-2"></i>Nội dung truyện</h5>
+            <div class="story-text" id="storyContent">
+                Đang tải nội dung...
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const storyId = {{ story_id }};
+        let storyData = null;
+        let selectedVoiceId = null;
+        let isFavorite = false;
+
+        // Load story details
+        async function loadStory() {
+            try {
+                const res = await fetch(`/api/stories/${storyId}`);
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    storyData = data.story;
+                    renderStory();
+                } else {
+                    alert('Không tìm thấy truyện');
+                    window.location.href = '/stories';
+                }
+            } catch (err) {
+                console.error('Error loading story:', err);
+            }
+        }
+
+        function renderStory() {
+            document.getElementById('pageTitle').textContent = storyData.title + ' - Story Telling App';
+            document.getElementById('storyTitle').textContent = storyData.title;
+            document.getElementById('storySummary').textContent = storyData.summary || '';
+            document.getElementById('storyContent').textContent = storyData.content;
+
+            // Cover
+            const coverEl = document.getElementById('storyCover');
+            if (storyData.cover_image) {
+                coverEl.innerHTML = `<img src="${storyData.cover_image}" class="story-cover-large" alt="${storyData.title}">`;
+            } else {
+                coverEl.innerHTML = `<div class="story-cover-placeholder-large"><i class="fas fa-book"></i></div>`;
+            }
+
+            // Meta
+            document.querySelector('#storyCategory span').textContent = storyData.category_name || 'Chưa phân loại';
+            document.getElementById('storyCountry').textContent = storyData.country === 'VN' ? '🇻🇳 Việt Nam' : '🌍 Nước ngoài';
+
+            // Stats
+            document.getElementById('statFavorites').textContent = storyData.favorite_count || 0;
+            document.getElementById('statViews').textContent = storyData.view_count || 0;
+            document.getElementById('statDuration').textContent = storyData.duration_minutes || '--';
+
+            // Favorite status
+            isFavorite = storyData.is_favorite;
+            updateFavoriteBtn();
+        }
+
+        // Load voices
+        async function loadVoices() {
+            try {
+                const res = await fetch('/api/voices');
+                const data = await res.json();
+
+                if (data.status === 'ok' && data.voices.length > 0) {
+                    const container = document.getElementById('voiceOptions');
+                    container.innerHTML = data.voices.map((voice, i) => `
+                        <div class="col-md-6">
+                            <div class="voice-option ${i === 0 ? 'selected' : ''}" data-id="${voice.sample_id}">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-${voice.gender === 'female' ? 'venus' : 'mars'} fa-2x me-3 text-${voice.gender === 'female' ? 'pink' : 'info'}"></i>
+                                    <div>
+                                        <strong class="text-white">${voice.name}</strong>
+                                        <small class="text-white-50 d-block">${voice.description || ''}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Set default selected
+                    selectedVoiceId = data.voices[0].sample_id;
+
+                    // Click handlers
+                    container.querySelectorAll('.voice-option').forEach(opt => {
+                        opt.addEventListener('click', () => {
+                            container.querySelectorAll('.voice-option').forEach(o => o.classList.remove('selected'));
+                            opt.classList.add('selected');
+                            selectedVoiceId = parseInt(opt.dataset.id);
+                        });
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading voices:', err);
+            }
+        }
+
+        // Custom voice file preview
+        document.getElementById('customVoiceFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('uploadedVoicePreview');
+                const player = document.getElementById('customVoicePlayer');
+                player.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            }
+        });
+
+        // Listen button
+        document.getElementById('listenBtn').addEventListener('click', async () => {
+            if (!storyData) return;
+
+            const audioContainer = document.getElementById('audioContainer');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const audioPlayer = document.getElementById('audioPlayer');
+
+            audioContainer.style.display = 'block';
+            loadingSpinner.classList.add('show');
+            audioPlayer.style.display = 'none';
+
+            try {
+                // Generate audio using the existing TTS endpoint
+                const formData = new FormData();
+                formData.append('text', storyData.content);
+                formData.append('lang', 'vi');
+
+                // Check if custom voice is uploaded
+                const customVoiceFile = document.getElementById('customVoiceFile').files[0];
+                const uploadTabActive = document.getElementById('upload-tab').classList.contains('active');
+
+                if (uploadTabActive && customVoiceFile) {
+                    // Use uploaded voice
+                    formData.append('audio', customVoiceFile);
+                } else {
+                    // Use sample voice
+                    formData.append('voice_sample', selectedVoiceId === 1 ? 'male' : 'female');
+                }
+
+                const res = await fetch('/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.audio_url) {
+                    audioPlayer.src = data.audio_url;
+                    audioPlayer.style.display = 'block';
+                    loadingSpinner.classList.remove('show');
+                    audioPlayer.play();
+
+                    // Add to history
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        fetch('/api/history', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                story_id: storyId,
+                                voice_id: selectedVoiceId,
+                                audio_path: data.audio_url
+                            })
+                        });
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to generate audio');
+                }
+            } catch (err) {
+                console.error('Error generating audio:', err);
+                loadingSpinner.classList.remove('show');
+                audioContainer.innerHTML = `<p class="text-danger text-center mb-0">Lỗi: ${err.message}</p>`;
+            }
+        });
+
+        // Favorite button
+        document.getElementById('favoriteBtn').addEventListener('click', async () => {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user) {
+                window.location.href = '/login';
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+
+            try {
+                if (isFavorite) {
+                    await fetch(`/api/favorites/${storyId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    isFavorite = false;
+                } else {
+                    await fetch('/api/favorites', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ story_id: storyId })
+                    });
+                    isFavorite = true;
+                }
+                updateFavoriteBtn();
+            } catch (err) {
+                console.error('Error toggling favorite:', err);
+            }
+        });
+
+        function updateFavoriteBtn() {
+            const btn = document.getElementById('favoriteBtn');
+            if (isFavorite) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fas fa-heart me-2"></i>Đã yêu thích';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="far fa-heart me-2"></i>Yêu thích';
+            }
+        }
+
+        // Init
+        loadStory();
+        loadVoices();
+    </script>
+</body>
+
+</html>

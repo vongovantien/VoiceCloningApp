@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý truyện - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+        }
+
+        .theme-toggle-admin {
+            background: transparent;
+            border: 2px solid #ffd700;
+            color: #ffd700;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+        }
+
+        .theme-toggle-admin:hover {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+
+        body {
+            background: #0f0f1a;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            color: #ffd700;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 15px 0 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 12px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+        }
+
+        .nav-link i {
+            width: 25px;
+            margin-right: 10px;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+        }
+
+        .card-custom {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .card-custom .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+        }
+
+        .table-custom {
+            color: white;
+        }
+
+        .table-custom th {
+            border-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .table-custom td {
+            border-color: rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .filter-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+        }
+
+        .filter-bar select option {
+            background: #1a1a2e;
+        }
+
+        .top-card {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.1));
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+
+        .story-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="/admin" class="sidebar-brand mb-0 pb-0 border-0">
+                <i class="fas fa-book-open me-2"></i>Admin
+            </a>
+            <button id="themeToggle" class="theme-toggle-admin" title="Chuyển đổi theme">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+        <hr class="border-secondary my-3">
+        <nav class="sidebar-nav mt-3">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin">
+                        <i class="fas fa-chart-pie"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="fas fa-users"></i>Người dùng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/stories">
+                        <i class="fas fa-book"></i>Truyện
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/stories/add">
+                        <i class="fas fa-plus-circle"></i>Thêm truyện
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="/">
+                        <i class="fas fa-home"></i>Về trang chủ
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1">Quản lý truyện</h2>
+                <p class="text-white-50 mb-0">Thống kê và quản lý nội dung</p>
+            </div>
+            <a href="/admin/stories/add" class="btn btn-warning">
+                <i class="fas fa-plus me-2"></i>Thêm truyện
+            </a>
+        </div>
+
+        <!-- Top Stats Row -->
+        <div class="row g-4 mb-4">
+            <!-- Top 10 Most Listened -->
+            <div class="col-lg-6">
+                <div class="card card-custom h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-headphones text-warning me-2"></i>Top 10 truyện nhiều lượt
+                            nghe nhất</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Truyện</th>
+                                    <th>Lượt nghe</th>
+                                    <th>Lượt xem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topListenedTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Chart -->
+            <div class="col-lg-6">
+                <div class="card card-custom h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie text-info me-2"></i>Thể loại được nghe nhiều</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm truyện...">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterCategory">
+                        <option value="">Tất cả thể loại</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterStatus">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="active">Đang hiển thị</option>
+                        <option value="inactive">Đã ẩn</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="sortBy">
+                        <option value="newest">Mới nhất</option>
+                        <option value="oldest">Cũ nhất</option>
+                        <option value="views">Nhiều lượt xem</option>
+                        <option value="listens">Nhiều lượt nghe</option>
+                        <option value="favorites">Nhiều yêu thích</option>
+                    </select>
+                </div>
+                <div class="col-md-3 text-end">
+                    <button class="btn btn-outline-warning" onclick="loadStories()">
+                        <i class="fas fa-sync-alt me-1"></i>Làm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stories Table -->
+        <div class="card card-custom">
+            <div class="card-body p-0">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Truyện</th>
+                            <th>Thể loại</th>
+                            <th>Lượt xem</th>
+                            <th>Lượt nghe</th>
+                            <th>Yêu thích</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="storiesTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check admin
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        if (!user || !user.is_admin) {
+            window.location.href = '/login';
+        }
+
+        let currentPage = 1;
+        let categoryChart = null;
+
+        // Load categories for filter
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/stories/categories');
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    const select = document.getElementById('filterCategory');
+                    data.categories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.category_id;
+                        option.textContent = cat.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        // Load stories
+        async function loadStories() {
+            try {
+                const token = localStorage.getItem('token');
+                const search = document.getElementById('searchInput').value;
+                const category = document.getElementById('filterCategory').value;
+                const status = document.getElementById('filterStatus').value;
+                const sort = document.getElementById('sortBy').value;
+
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    per_page: 10,
+                    search,
+                    category_id: category,
+                    status,
+                    sort
+                });
+
+                const res = await fetch(`/admin/api/stories?${params}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    renderStories(data.stories);
+                    renderPagination(data.pagination);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        // Load top listened and category stats
+        async function loadStats() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/admin/api/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    // Top 10 most listened
+                    const topTable = document.getElementById('topListenedTable');
+                    const topStories = data.popular_stories.slice(0, 10);
+                    topTable.innerHTML = topStories.map((story, i) => `
+                        <tr>
+                            <td>
+                                <span class="badge ${i < 3 ? 'bg-warning text-dark' : 'bg-secondary'}">${i + 1}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="story-thumb me-2">
+                                        <i class="fas fa-book text-dark"></i>
+                                    </div>
+                                    <strong>${story.title}</strong>
+                                </div>
+                            </td>
+                            <td><i class="fas fa-headphones me-1 text-warning"></i>${story.listen_count || 0}</td>
+                            <td><i class="fas fa-eye me-1 text-info"></i>${story.view_count}</td>
+                        </tr>
+                    `).join('');
+
+                    // Category chart
+                    const categories = data.stories_by_category;
+                    const ctx = document.getElementById('categoryChart').getContext('2d');
+
+                    if (categoryChart) {
+                        categoryChart.destroy();
+                    }
+
+                    categoryChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: categories.map(c => c.name),
+                            datasets: [{
+                                data: categories.map(c => c.count),
+                                backgroundColor: [
+                                    '#ffd700',
+                                    '#ff8c00',
+                                    '#ff6347',
+                                    '#4169e1',
+                                    '#32cd32',
+                                    '#9370db',
+                                    '#20b2aa',
+                                    '#ff69b4'
+                                ],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        color: 'white',
+                                        padding: 15
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        function renderStories(stories) {
+            const tbody = document.getElementById('storiesTable');
+            tbody.innerHTML = stories.map(s => `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="story-thumb me-3">
+                                <i class="fas fa-book text-dark"></i>
+                            </div>
+                            <div>
+                                <strong>${s.title}</strong>
+                                <div class="text-white-50 small">${s.country || 'VN'} • ${s.min_age}-${s.max_age} tuổi</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-secondary">${s.category_name || 'N/A'}</span></td>
+                    <td><i class="fas fa-eye me-1 text-info"></i>${s.view_count}</td>
+                    <td><i class="fas fa-headphones me-1 text-warning"></i>${s.listen_count || 0}</td>
+                    <td><i class="fas fa-heart me-1 text-danger"></i>${s.favorite_count}</td>
+                    <td>
+                        <span class="badge ${s.is_active ? 'bg-success' : 'bg-danger'}">
+                            ${s.is_active ? 'Hiển thị' : 'Ẩn'}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/admin/stories/edit/${s.story_id}" class="btn btn-sm btn-outline-warning me-1">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-${s.is_active ? 'danger' : 'success'}" onclick="toggleStory(${s.story_id})">
+                            <i class="fas fa-${s.is_active ? 'eye-slash' : 'eye'}"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPagination(pagination) {
+            if (!pagination || pagination.pages <= 1) {
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
+                    <a class="page-link bg-dark text-white border-secondary" href="#" onclick="goToPage(${pagination.page - 1})">«</a>
+                </li>
+            `;
+
+            for (let i = 1; i <= pagination.pages; i++) {
+                html += `
+                    <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                        <a class="page-link ${i === pagination.page ? 'bg-warning text-dark' : 'bg-dark text-white'} border-secondary" 
+                           href="#" onclick="goToPage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+
+            html += `
+                <li class="page-item ${pagination.page === pagination.pages ? 'disabled' : ''}">
+                    <a class="page-link bg-dark text-white border-secondary" href="#" onclick="goToPage(${pagination.page + 1})">»</a>
+                </li>
+            `;
+
+            document.getElementById('pagination').innerHTML = html;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadStories();
+        }
+
+        async function toggleStory(storyId) {
+            if (!confirm('Xác nhận thay đổi trạng thái?')) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/admin/api/stories/${storyId}/toggle-status`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    loadStories();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', () => {
+            currentPage = 1;
+            loadStories();
+        });
+
+        ['filterCategory', 'filterStatus', 'sortBy'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                currentPage = 1;
+                loadStories();
+            });
+        });
+
+        // Initialize
+        loadCategories();
+        loadStories();
+        loadStats();
+    </script>
+</body>
+
+</html>

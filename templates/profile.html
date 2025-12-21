@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang cá nhân - Story Telling App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <style>
+        .profile-header {
+            padding: 100px 0 40px;
+            text-align: center;
+        }
+
+        .avatar-large {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 20px;
+            color: white;
+        }
+
+        .card-custom {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius-lg);
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stat-box .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-box .label {
+            color: var(--text-muted);
+        }
+
+        .form-control-custom {
+            background: var(--bg-tertiary) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            border-radius: var(--radius-md);
+        }
+
+        .form-control-custom:focus {
+            background: var(--bg-secondary) !important;
+            border-color: var(--primary-color) !important;
+            color: var(--text-primary) !important;
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .nav-pills .nav-link {
+            color: var(--text-secondary);
+            border-radius: var(--radius-full);
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        /* Navbar styling */
+        .navbar-custom {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Light theme navbar */
+        [data-theme="light"] .navbar-custom {
+            background: rgba(245, 243, 239, 0.95) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link {
+            color: #333 !important;
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        [data-theme="light"] .navbar-custom .navbar-brand {
+            color: var(--primary-color) !important;
+        }
+    </style>
+</head>
+
+<body class="profile-page">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/" style="color: var(--primary-color);">
+                <i class="fas fa-book-open me-2"></i>Story Telling
+            </a>
+            <div class="navbar-nav ms-auto align-items-center">
+                <a class="nav-link" href="/stories">Kho truyện</a>
+                <a class="nav-link" href="#" onclick="logout()">Đăng xuất</a>
+                <button id="themeToggle" class="theme-toggle ms-3" title="Chuyển đổi theme">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Header -->
+    <header class="profile-header">
+        <div class="container">
+            <div class="position-relative d-inline-block">
+                <div class="avatar-large" id="avatarIcon" style="cursor: pointer;"
+                    onclick="document.getElementById('avatarInput').click()">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="position-absolute bottom-0 end-0"
+                    style="background: var(--gradient-primary); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;"
+                    onclick="document.getElementById('avatarInput').click()">
+                    <i class="fas fa-camera text-white" style="font-size: 14px;"></i>
+                </div>
+                <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+            </div>
+            <h2 id="username" class="mt-3">Đang tải...</h2>
+            <p id="email" style="color: var(--text-muted);"></p>
+        </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="container mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card-custom stat-box">
+                    <div class="value" id="statListened">0</div>
+                    <div class="label">Truyện đã nghe</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-custom stat-box">
+                    <div class="value" id="statCompleted">0</div>
+                    <div class="label">Đã hoàn thành</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-custom stat-box">
+                    <div class="value" id="statFavorites">0</div>
+                    <div class="label">Yêu thích</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="container pb-5">
+        <ul class="nav nav-pills justify-content-center mb-4" id="profileTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="pill" href="#settings">
+                    <i class="fas fa-cog me-1"></i>Cài đặt
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#password">
+                    <i class="fas fa-lock me-1"></i>Đổi mật khẩu
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Settings Tab -->
+            <div class="tab-pane fade show active" id="settings">
+                <div class="card-custom p-4">
+                    <h5 class="mb-4"><i class="fas fa-user-edit me-2 text-warning"></i>Thông tin cá nhân</h5>
+                    <form id="profileForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tên người dùng</label>
+                                <input type="text" class="form-control form-control-custom" id="inputUsername">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control form-control-custom" id="inputEmail" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tuổi</label>
+                                <input type="number" class="form-control form-control-custom" id="inputAge" min="1"
+                                    max="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Quốc gia</label>
+                                <select class="form-control form-control-custom" id="inputCountry">
+                                    <option value="VN">🇻🇳 Việt Nam</option>
+                                    <option value="FOREIGN">🌍 Nước ngoài</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning mt-4">
+                            <i class="fas fa-save me-2"></i>Lưu thay đổi
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Tab -->
+            <div class="tab-pane fade" id="password">
+                <div class="card-custom p-4">
+                    <h5 class="mb-4"><i class="fas fa-key me-2 text-warning"></i>Đổi mật khẩu</h5>
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu hiện tại</label>
+                            <input type="password" class="form-control form-control-custom" id="currentPassword"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control form-control-custom" id="newPassword" required
+                                minlength="6">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Xác nhận mật khẩu mới</label>
+                            <input type="password" class="form-control form-control-custom" id="confirmPassword"
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check auth
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        if (!user) {
+            window.location.href = '/login';
+        }
+
+        // Load profile
+        function loadProfile() {
+            document.getElementById('username').textContent = user.username;
+            document.getElementById('email').textContent = user.email;
+            document.getElementById('inputUsername').value = user.username;
+            document.getElementById('inputEmail').value = user.email;
+            document.getElementById('inputAge').value = user.age || '';
+            document.getElementById('inputCountry').value = user.country || 'VN';
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    document.getElementById('statListened').textContent = data.stats.total_listened;
+                    document.getElementById('statCompleted').textContent = data.stats.completed;
+                    document.getElementById('statFavorites').textContent = data.stats.favorites;
+                }
+            } catch (err) {
+                console.error('Error loading stats:', err);
+            }
+        }
+
+        // Update profile
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const token = localStorage.getItem('token');
+            const data = {
+                username: document.getElementById('inputUsername').value,
+                age: parseInt(document.getElementById('inputAge').value) || null,
+                country: document.getElementById('inputCountry').value
+            };
+
+            try {
+                const res = await fetch('/api/auth/update-profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    // Update local storage
+                    user.username = data.username;
+                    user.age = data.age;
+                    user.country = data.country;
+                    localStorage.setItem('user', JSON.stringify(user));
+
+                    alert('Cập nhật thành công!');
+                    loadProfile();
+                } else {
+                    alert(result.error);
+                }
+            } catch (err) {
+                alert('Đã xảy ra lỗi');
+            }
+        });
+
+        // Change password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                alert('Mật khẩu xác nhận không khớp!');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            const data = {
+                current_password: document.getElementById('currentPassword').value,
+                new_password: newPassword
+            };
+
+            try {
+                const res = await fetch('/api/auth/change-password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert('Đổi mật khẩu thành công!');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    alert(result.error);
+                }
+            } catch (err) {
+                alert('Đã xảy ra lỗi');
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        // Avatar upload
+        document.getElementById('avatarInput').addEventListener('change', async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show local preview immediately
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                document.getElementById('avatarIcon').innerHTML =
+                    `<img src="${event.target.result}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+            };
+            reader.readAsDataURL(file);
+
+            // Upload to server
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/upload/avatar', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    // Update user object in localStorage
+                    user.avatar = data.url;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    alert('Cập nhật ảnh đại diện thành công!');
+                } else {
+                    alert('Upload failed: ' + data.error);
+                }
+            } catch (err) {
+                console.error('Upload error:', err);
+                alert('Lỗi upload ảnh');
+            }
+        });
+
+        // Update loadProfile to show avatar
+        function showAvatar() {
+            if (user.avatar) {
+                document.getElementById('avatarIcon').innerHTML =
+                    `<img src="${user.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+            }
+        }
+
+        loadProfile();
+        loadStats();
+        showAvatar();
+    </script>
+</body>
+
+</html>

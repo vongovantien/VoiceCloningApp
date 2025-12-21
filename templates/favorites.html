@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truyện yêu thích - Story Telling App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <style>
+        .page-header {
+            padding: 100px 0 40px;
+        }
+
+        .story-card {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .story-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color) !important;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .story-cover {
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .story-cover-placeholder {
+            height: 180px;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .story-cover-placeholder i {
+            font-size: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-state i {
+            font-size: 5rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .btn-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--danger-color);
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            color: white;
+            transition: var(--transition);
+        }
+
+        .btn-remove:hover {
+            transform: scale(1.1);
+        }
+
+        /* Navbar styling */
+        .navbar-custom {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Light theme navbar */
+        [data-theme="light"] .navbar-custom {
+            background: rgba(245, 243, 239, 0.95) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link {
+            color: #333 !important;
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        [data-theme="light"] .navbar-custom .navbar-brand {
+            color: var(--primary-color) !important;
+        }
+    </style>
+</head>
+
+<body class="favorites-page">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/" style="color: var(--primary-color);">
+                <i class="fas fa-book-open me-2"></i>Story Telling
+            </a>
+            <div class="navbar-nav ms-auto align-items-center">
+                <a class="nav-link" href="/stories">Kho truyện</a>
+                <a class="nav-link" href="/profile">Trang cá nhân</a>
+                <button id="themeToggle" class="theme-toggle ms-3" title="Chuyển đổi theme">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="page-header">
+        <div class="container">
+            <h1 class="text-warning">
+                <i class="fas fa-heart me-3"></i>Truyện yêu thích
+            </h1>
+            <p class="text-white-50">Danh sách các truyện bạn đã yêu thích</p>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="container pb-5">
+        <div class="row g-4" id="favoritesGrid">
+            <!-- Favorites will be loaded here -->
+        </div>
+
+        <div class="empty-state d-none" id="emptyState">
+            <i class="fas fa-heart-broken"></i>
+            <h4>Chưa có truyện yêu thích</h4>
+            <p class="text-white-50">Hãy khám phá kho truyện và thêm vào yêu thích!</p>
+            <a href="/stories" class="btn btn-warning mt-3">
+                <i class="fas fa-book me-2"></i>Khám phá ngay
+            </a>
+        </div>
+
+        <!-- Pagination -->
+        <nav class="mt-5" id="paginationNav">
+            <ul class="pagination justify-content-center"></ul>
+        </nav>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check auth
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        if (!user) {
+            window.location.href = '/login';
+        }
+
+        let currentPage = 1;
+
+        async function loadFavorites() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/favorites?page=${currentPage}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                const grid = document.getElementById('favoritesGrid');
+                const emptyState = document.getElementById('emptyState');
+
+                if (data.status === 'ok' && data.favorites.length > 0) {
+                    grid.classList.remove('d-none');
+                    emptyState.classList.add('d-none');
+
+                    grid.innerHTML = data.favorites.map(story => `
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="story-card position-relative">
+                                <button class="btn-remove" onclick="removeFavorite(${story.story_id}, this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                ${story.cover_image
+                            ? `<img src="${story.cover_image}" class="story-cover w-100" alt="${story.title}">`
+                            : `<div class="story-cover-placeholder"><i class="fas fa-book"></i></div>`
+                        }
+                                <div class="p-3">
+                                    <h6 class="text-white mb-2">${story.title}</h6>
+                                    <small class="text-white-50">${story.category_name || ''}</small>
+                                    <div class="d-flex gap-2 mt-3">
+                                        <a href="/story/${story.story_id}" class="btn btn-sm btn-warning flex-grow-1">
+                                            <i class="fas fa-headphones me-1"></i>Nghe
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.classList.add('d-none');
+                    emptyState.classList.remove('d-none');
+                }
+            } catch (err) {
+                console.error('Error loading favorites:', err);
+            }
+        }
+
+        async function removeFavorite(storyId, btn) {
+            if (!confirm('Xóa khỏi yêu thích?')) return;
+
+            const token = localStorage.getItem('token');
+            try {
+                await fetch(`/api/favorites/${storyId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                btn.closest('.col-lg-3').remove();
+
+                // Check if empty
+                if (document.querySelectorAll('#favoritesGrid .col-lg-3').length === 0) {
+                    document.getElementById('favoritesGrid').classList.add('d-none');
+                    document.getElementById('emptyState').classList.remove('d-none');
+                }
+            } catch (err) {
+                console.error('Error removing favorite:', err);
+            }
+        }
+
+        loadFavorites();
+    </script>
+</body>
+
+</html>

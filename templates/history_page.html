@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch sử nghe - Story Telling App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <style>
+        .page-header {
+            padding: 100px 0 40px;
+        }
+
+        .history-item {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: var(--transition);
+        }
+
+        .history-item:hover {
+            border-color: var(--primary-color) !important;
+            box-shadow: var(--shadow-md);
+        }
+
+        .story-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+        }
+
+        .story-thumb-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-bar-custom {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+
+        .progress-bar-custom .progress {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 3px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-state i {
+            font-size: 5rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .badge-completed {
+            background: var(--success-color);
+        }
+
+        .badge-listening {
+            background: var(--primary-color);
+            color: var(--bg-primary);
+        }
+
+        /* Navbar styling */
+        .navbar-custom {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Light theme navbar */
+        [data-theme="light"] .navbar-custom {
+            background: rgba(245, 243, 239, 0.95) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link {
+            color: #333 !important;
+        }
+
+        [data-theme="light"] .navbar-custom .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        [data-theme="light"] .navbar-custom .navbar-brand {
+            color: var(--primary-color) !important;
+        }
+    </style>
+</head>
+
+<body class="history-page">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/" style="color: var(--primary-color);">
+                <i class="fas fa-book-open me-2"></i>Story Telling
+            </a>
+            <div class="navbar-nav ms-auto align-items-center">
+                <a class="nav-link" href="/stories">Kho truyện</a>
+                <a class="nav-link" href="/profile">Trang cá nhân</a>
+                <button id="themeToggle" class="theme-toggle ms-3" title="Chuyển đổi theme">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="page-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="text-warning">
+                    <i class="fas fa-history me-3"></i>Lịch sử nghe
+                </h1>
+                <p class="text-white-50 mb-0">Các truyện bạn đã nghe gần đây</p>
+            </div>
+            <button class="btn btn-outline-danger" onclick="clearHistory()">
+                <i class="fas fa-trash me-2"></i>Xóa tất cả
+            </button>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="container pb-5">
+        <div id="historyList">
+            <!-- History items will be loaded here -->
+        </div>
+
+        <div class="empty-state d-none" id="emptyState">
+            <i class="fas fa-headphones"></i>
+            <h4>Chưa có lịch sử nghe</h4>
+            <p class="text-white-50">Hãy bắt đầu nghe truyện đầu tiên!</p>
+            <a href="/stories" class="btn btn-warning mt-3">
+                <i class="fas fa-book me-2"></i>Khám phá kho truyện
+            </a>
+        </div>
+
+        <!-- Pagination -->
+        <nav class="mt-4" id="paginationNav">
+            <ul class="pagination justify-content-center"></ul>
+        </nav>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check auth
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        if (!user) {
+            window.location.href = '/login';
+        }
+
+        let currentPage = 1;
+
+        async function loadHistory() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/history?page=${currentPage}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                const list = document.getElementById('historyList');
+                const emptyState = document.getElementById('emptyState');
+
+                if (data.status === 'ok' && data.history.length > 0) {
+                    list.classList.remove('d-none');
+                    emptyState.classList.add('d-none');
+
+                    list.innerHTML = data.history.map(item => `
+                        <div class="history-item" data-id="${item.id}">
+                            <div class="d-flex align-items-center">
+                                ${item.cover_image
+                            ? `<img src="${item.cover_image}" class="story-thumb me-3" alt="${item.title}">`
+                            : `<div class="story-thumb-placeholder me-3"><i class="fas fa-book text-white-50"></i></div>`
+                        }
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="text-white mb-1">${item.title}</h6>
+                                            <small class="text-white-50">
+                                                <i class="fas fa-headphones me-1"></i>${item.listen_count} lần nghe
+                                                ${item.voice_name ? ` • Giọng: ${item.voice_name}` : ''}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            ${item.completed
+                            ? '<span class="badge badge-completed">Hoàn thành</span>'
+                            : '<span class="badge badge-listening">Đang nghe</span>'
+                        }
+                                        </div>
+                                    </div>
+                                    <div class="progress-bar-custom">
+                                        <div class="progress" style="width: ${item.progress_percent || 0}%"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <small class="text-white-50">
+                                            <i class="fas fa-clock me-1"></i>${formatDate(item.last_listened)}
+                                        </small>
+                                        <div>
+                                            <a href="/story/${item.story_id}" class="btn btn-sm btn-outline-warning me-2">
+                                                <i class="fas fa-play me-1"></i>Tiếp tục
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="removeHistory(${item.id}, this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.classList.add('d-none');
+                    emptyState.classList.remove('d-none');
+                }
+            } catch (err) {
+                console.error('Error loading history:', err);
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function removeHistory(historyId, btn) {
+            const token = localStorage.getItem('token');
+            try {
+                await fetch(`/api/history/${historyId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                btn.closest('.history-item').remove();
+
+                // Check if empty
+                if (document.querySelectorAll('#historyList .history-item').length === 0) {
+                    document.getElementById('historyList').classList.add('d-none');
+                    document.getElementById('emptyState').classList.remove('d-none');
+                }
+            } catch (err) {
+                console.error('Error removing history:', err);
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm('Xóa toàn bộ lịch sử nghe?')) return;
+
+            const token = localStorage.getItem('token');
+            try {
+                await fetch('/api/history/clear', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                document.getElementById('historyList').innerHTML = '';
+                document.getElementById('historyList').classList.add('d-none');
+                document.getElementById('emptyState').classList.remove('d-none');
+            } catch (err) {
+                console.error('Error clearing history:', err);
+            }
+        }
+
+        loadHistory();
+    </script>
+</body>
+
+</html>

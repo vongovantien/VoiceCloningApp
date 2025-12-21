@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý người dùng - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+        }
+
+        .theme-toggle-admin {
+            background: transparent;
+            border: 2px solid #ffd700;
+            color: #ffd700;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+        }
+
+        .theme-toggle-admin:hover {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+
+        body {
+            background: #0f0f1a;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            color: #ffd700;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 15px 0 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 12px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+        }
+
+        .nav-link i {
+            width: 25px;
+            margin-right: 10px;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+        }
+
+        .card-custom {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .table-custom {
+            color: white;
+        }
+
+        .table-custom th {
+            border-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .table-custom td {
+            border-color: rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .btn-action {
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .badge-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .filter-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+        }
+
+        .filter-bar select option {
+            background: #1a1a2e;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Action buttons container - horizontal layout */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: nowrap;
+        }
+
+        /* Light theme overrides for admin */
+        [data-theme="light"] body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .sidebar {
+            background: linear-gradient(180deg, #f5f3ef 0%, #ebe9e4 100%);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .sidebar-brand {
+            color: var(--primary-color);
+            border-bottom-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .nav-link {
+            color: #555;
+        }
+
+        [data-theme="light"] .nav-link:hover,
+        [data-theme="light"] .nav-link.active {
+            background: rgba(201, 138, 0, 0.1);
+            color: var(--primary-color);
+        }
+
+        [data-theme="light"] .card-custom {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="light"] .table-custom {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .table-custom th {
+            color: var(--text-secondary);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="light"] .table-custom td {
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="light"] .filter-bar {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        [data-theme="light"] .filter-bar select,
+        [data-theme="light"] .filter-bar input {
+            background: white;
+            border-color: rgba(0, 0, 0, 0.15);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .filter-bar select option {
+            background: white;
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .form-select option {
+            background: white;
+            color: #333;
+        }
+
+        [data-theme="light"] .theme-toggle-admin {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        [data-theme="light"] .theme-toggle-admin:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="/admin" class="sidebar-brand mb-0 pb-0 border-0">
+                <i class="fas fa-book-open me-2"></i>Admin
+            </a>
+            <button id="themeToggle" class="theme-toggle-admin" title="Chuyển đổi theme">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+        <hr class="border-secondary my-3">
+        <nav class="sidebar-nav mt-3">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin">
+                        <i class="fas fa-chart-pie"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="fas fa-users"></i>Người dùng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/roles">
+                        <i class="fas fa-user-tag"></i>Vai trò
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/categories">
+                        <i class="fas fa-folder"></i>Thể loại
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/stories">
+                        <i class="fas fa-book"></i>Truyện
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="/">
+                        <i class="fas fa-home"></i>Về trang chủ
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1">Quản lý người dùng</h2>
+                <p class="text-white-50 mb-0">Quản lý tài khoản và phân quyền</p>
+            </div>
+            <span class="badge bg-warning text-dark" id="totalUsers">0 người dùng</span>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm...">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterStatus">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="active">Đang hoạt động</option>
+                        <option value="inactive">Đã khóa</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterRole">
+                        <option value="">Tất cả vai trò</option>
+                        <option value="admin">Admin</option>
+                        <option value="user">User</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterVerified">
+                        <option value="">Xác thực</option>
+                        <option value="verified">Đã xác thực</option>
+                        <option value="unverified">Chưa xác thực</option>
+                    </select>
+                </div>
+                <div class="col-md-3 text-end">
+                    <button class="btn btn-outline-warning" onclick="loadUsers()">
+                        <i class="fas fa-sync-alt me-1"></i>Làm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card card-custom">
+            <div class="card-body p-0">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Người dùng</th>
+                            <th>Email</th>
+                            <th>Vai trò</th>
+                            <th>Trạng thái</th>
+                            <th>Xác thực</th>
+                            <th>Ngày tạo</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </main>
+
+    <!-- User Detail Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Chi tiết người dùng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="userDetailContent">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check admin
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        if (!user || !user.is_admin) {
+            window.location.href = '/login';
+        }
+
+        let currentPage = 1;
+
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('token');
+                const search = document.getElementById('searchInput').value;
+                const status = document.getElementById('filterStatus').value;
+                const role = document.getElementById('filterRole').value;
+                const verified = document.getElementById('filterVerified').value;
+
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    per_page: 15,
+                    search,
+                    status,
+                    role,
+                    verified
+                });
+
+                const res = await fetch(`/admin/api/users?${params}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    document.getElementById('totalUsers').textContent = `${data.pagination.total} người dùng`;
+                    renderUsers(data.users);
+                    renderPagination(data.pagination);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTable');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar me-3">${u.username.charAt(0).toUpperCase()}</div>
+                            <strong>${u.username}</strong>
+                        </div>
+                    </td>
+                    <td>${u.email}</td>
+                    <td>
+                        <span class="badge ${u.is_admin ? 'bg-warning text-dark' : 'bg-secondary'}">
+                            ${u.is_admin ? 'Admin' : 'User'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge ${u.is_active ? 'bg-success' : 'bg-danger'}">
+                            ${u.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge ${u.is_verified ? 'bg-info' : 'bg-secondary'}">
+                            ${u.is_verified ? 'Verified' : 'Unverified'}
+                        </span>
+                    </td>
+                    <td class="text-white-50">${new Date(u.created_at).toLocaleDateString('vi-VN')}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-outline-info btn-action" onclick="viewUser(${u.user_id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-${u.is_active ? 'danger' : 'success'} btn-action" 
+                                    onclick="toggleStatus(${u.user_id})">
+                                <i class="fas fa-${u.is_active ? 'ban' : 'check'}"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning btn-action" onclick="toggleAdmin(${u.user_id})">
+                                <i class="fas fa-user-shield"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPagination(pagination) {
+            const nav = document.getElementById('pagination');
+            if (pagination.pages <= 1) {
+                nav.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
+                    <a class="page-link bg-dark text-white border-secondary" href="#" onclick="goToPage(${pagination.page - 1})">«</a>
+                </li>
+            `;
+
+            for (let i = 1; i <= pagination.pages; i++) {
+                html += `
+                    <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                        <a class="page-link ${i === pagination.page ? 'bg-warning text-dark' : 'bg-dark text-white'} border-secondary" 
+                           href="#" onclick="goToPage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+
+            html += `
+                <li class="page-item ${pagination.page === pagination.pages ? 'disabled' : ''}">
+                    <a class="page-link bg-dark text-white border-secondary" href="#" onclick="goToPage(${pagination.page + 1})">»</a>
+                </li>
+            `;
+
+            nav.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadUsers();
+        }
+
+        async function viewUser(userId) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/admin/api/users/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    const u = data.user;
+                    document.getElementById('userDetailContent').innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-warning">Thông tin cơ bản</h6>
+                                <p><strong>Username:</strong> ${u.username}</p>
+                                <p><strong>Email:</strong> ${u.email}</p>
+                                <p><strong>Tuổi:</strong> ${u.age || 'N/A'}</p>
+                                <p><strong>Quốc gia:</strong> ${u.country || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-warning">Trạng thái</h6>
+                                <p><strong>Vai trò:</strong> ${u.is_admin ? 'Admin' : 'User'}</p>
+                                <p><strong>Trạng thái:</strong> ${u.is_active ? 'Active' : 'Inactive'}</p>
+                                <p><strong>Xác thực:</strong> ${u.is_verified ? 'Đã xác thực' : 'Chưa'}</p>
+                                <p><strong>Đăng nhập:</strong> ${u.last_login ? new Date(u.last_login).toLocaleString('vi-VN') : 'Chưa'}</p>
+                            </div>
+                        </div>
+                        <hr class="border-secondary">
+                        <h6 class="text-warning">Hoạt động</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 rounded" style="background: rgba(255,255,255,0.05)">
+                                    <div class="h4 text-warning">${u.stats?.listen_count || 0}</div>
+                                    <small class="text-white-50">Lượt nghe</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 rounded" style="background: rgba(255,255,255,0.05)">
+                                    <div class="h4 text-danger">${u.stats?.favorite_count || 0}</div>
+                                    <small class="text-white-50">Yêu thích</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 rounded" style="background: rgba(255,255,255,0.05)">
+                                    <div class="h4 text-success">${u.stats?.stories_completed || 0}</div>
+                                    <small class="text-white-50">Hoàn thành</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    new bootstrap.Modal(document.getElementById('userModal')).show();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function toggleStatus(userId) {
+            if (!confirm('Xác nhận thay đổi trạng thái?')) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/admin/api/users/${userId}/toggle-status`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    loadUsers();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function toggleAdmin(userId) {
+            if (!confirm('Xác nhận thay đổi vai trò admin?')) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/admin/api/users/${userId}/toggle-admin`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    loadUsers();
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', () => {
+            currentPage = 1;
+            loadUsers();
+        });
+
+        ['filterStatus', 'filterRole', 'filterVerified'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                currentPage = 1;
+                loadUsers();
+            });
+        });
+
+        loadUsers();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Story Telling App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+        }
+
+        .theme-toggle-admin {
+            background: transparent;
+            border: 2px solid #ffd700;
+            color: #ffd700;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+        }
+
+        .theme-toggle-admin:hover {
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+
+        body {
+            background: #0f0f1a;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            color: #ffd700;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 15px 0 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 12px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+        }
+
+        .nav-link i {
+            width: 25px;
+            margin-right: 10px;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: #ffd700;
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+
+        .card-custom {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .card-custom .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+        }
+
+        .table-custom {
+            color: white;
+        }
+
+        .table-custom th {
+            border-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+        }
+
+        .table-custom td {
+            border-color: rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .progress-custom {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .progress-custom .progress-bar {
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+        }
+
+        .badge-custom {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Light theme overrides for admin */
+        [data-theme="light"] body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .sidebar {
+            background: linear-gradient(180deg, #f5f3ef 0%, #ebe9e4 100%);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .sidebar-brand {
+            color: var(--primary-color);
+            border-bottom-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .nav-link {
+            color: #555;
+        }
+
+        [data-theme="light"] .nav-link:hover,
+        [data-theme="light"] .nav-link.active {
+            background: rgba(201, 138, 0, 0.1);
+            color: var(--primary-color);
+        }
+
+        [data-theme="light"] .stat-card {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="light"] .stat-value {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .stat-label {
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .card-custom {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="light"] .card-custom .card-header {
+            border-bottom-color: rgba(0, 0, 0, 0.08);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .card-custom .card-header h5,
+        [data-theme="light"] .card-custom h5,
+        [data-theme="light"] h5 {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .card-custom .card-body {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .table-custom {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .table-custom th {
+            color: var(--text-secondary);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="light"] .table-custom td {
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="light"] .progress-custom {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="light"] .theme-toggle-admin {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        [data-theme="light"] .theme-toggle-admin:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="/admin" class="sidebar-brand mb-0 pb-0 border-0">
+                <i class="fas fa-book-open me-2"></i>Admin
+            </a>
+            <button id="themeToggle" class="theme-toggle-admin" title="Chuyển đổi theme">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+        <hr class="border-secondary my-3">
+        <nav class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin">
+                        <i class="fas fa-chart-pie"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="fas fa-users"></i>Người dùng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/roles">
+                        <i class="fas fa-user-tag"></i>Vai trò
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/categories">
+                        <i class="fas fa-folder"></i>Thể loại
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/stories">
+                        <i class="fas fa-book"></i>Truyện
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/stories/add">
+                        <i class="fas fa-plus-circle"></i>Thêm truyện
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="/">
+                        <i class="fas fa-home"></i>Về trang chủ
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>Đăng xuất
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1">Dashboard</h2>
+                <p class="text-white-50 mb-0">Tổng quan hệ thống</p>
+            </div>
+            <span class="text-white-50" id="currentDate"></span>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value" id="statUsers">-</div>
+                            <div class="stat-label">Người dùng</div>
+                        </div>
+                        <div class="stat-icon bg-primary bg-opacity-25 text-primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value" id="statStories">-</div>
+                            <div class="stat-label">Truyện</div>
+                        </div>
+                        <div class="stat-icon bg-success bg-opacity-25 text-success">
+                            <i class="fas fa-book"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value" id="statListens">-</div>
+                            <div class="stat-label">Lượt nghe</div>
+                        </div>
+                        <div class="stat-icon bg-warning bg-opacity-25 text-warning">
+                            <i class="fas fa-headphones"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value" id="statFavorites">-</div>
+                            <div class="stat-label">Lượt yêu thích</div>
+                        </div>
+                        <div class="stat-icon bg-danger bg-opacity-25 text-danger">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Popular Stories -->
+            <div class="col-lg-8">
+                <div class="card card-custom">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-fire text-warning me-2"></i>Truyện phổ biến nhất</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Tiêu đề</th>
+                                    <th>Danh mục</th>
+                                    <th>Yêu thích</th>
+                                    <th>Lượt xem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="popularStoriesTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stories by Category -->
+            <div class="col-lg-4">
+                <div class="card card-custom">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-folder text-info me-2"></i>Theo danh mục</h5>
+                    </div>
+                    <div class="card-body" id="categoryStats">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="col-12">
+                <div class="card card-custom">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-clock text-primary me-2"></i>Hoạt động gần đây</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Người dùng</th>
+                                    <th>Truyện</th>
+                                    <th>Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentActivityTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check admin access
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        if (!user || !user.is_admin) {
+            window.location.href = '/login';
+        }
+
+        // Current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('vi-VN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/admin/api/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    // Update stat cards
+                    document.getElementById('statUsers').textContent = data.stats.total_users.toLocaleString();
+                    document.getElementById('statStories').textContent = data.stats.total_stories.toLocaleString();
+                    document.getElementById('statListens').textContent = data.stats.total_listens.toLocaleString();
+                    document.getElementById('statFavorites').textContent = data.stats.total_favorites.toLocaleString();
+
+                    // Popular stories
+                    const popularTable = document.getElementById('popularStoriesTable');
+                    popularTable.innerHTML = data.popular_stories.map((story, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>
+                                <strong>${story.title}</strong>
+                            </td>
+                            <td><span class="badge bg-secondary">${story.category_name || 'N/A'}</span></td>
+                            <td><i class="fas fa-heart text-danger me-1"></i>${story.favorite_count}</td>
+                            <td><i class="fas fa-eye me-1"></i>${story.view_count}</td>
+                        </tr>
+                    `).join('');
+
+                    // Category stats
+                    const categoryStats = document.getElementById('categoryStats');
+                    const maxCount = Math.max(...data.stories_by_category.map(c => c.count));
+                    categoryStats.innerHTML = data.stories_by_category.map(cat => `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>${cat.name}</span>
+                                <span class="text-white-50">${cat.count} truyện</span>
+                            </div>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar" style="width: ${(cat.count / maxCount) * 100}%"></div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Recent activity
+                    const activityTable = document.getElementById('recentActivityTable');
+                    activityTable.innerHTML = data.recent_activity.map(act => `
+                        <tr>
+                            <td><i class="fas fa-user-circle me-2"></i>${act.username}</td>
+                            <td>${act.story_title}</td>
+                            <td class="text-white-50">${new Date(act.last_listened).toLocaleString('vi-VN')}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Error loading stats:', err);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        loadStats();
+    </script>
+</body>
+
+</html>
